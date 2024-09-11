@@ -112,3 +112,39 @@ def check_numeric(input_str):
         dItem['CodeId'] = row[3]
         dResult['data']['items'].append(dItem)
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
+
+
+def generate_long_sql(fields, data):
+    field_str = []
+    value_str = []
+    for f in fields.keys():
+        field_str.append('`{}`'.format(f))
+        if fields[f]['type'] == 'str':
+            value_str.append("'{}'".format(data[f]))
+        elif fields[f]['type'] == 'bool':
+            value_str.append('{}'.format(data[f]))
+
+    return (
+        ',\n'.join(field_str),
+        ',\n'.join(value_str)
+    )
+    pass
+
+def generate_update_sql(fields, data):
+    field_str = []
+    for f in fields.keys():
+        if fields[f]['type'] == 'str':
+            field_str.append("`{field}` = '{value}'".format(field=f, value=data[f]))
+        elif fields[f]['type'] == 'bool':
+            field_str.append("`{field}` = {value}".format(field=f, value=data[f]))
+
+    return ',\n'.join(field_str)
+    pass
+
+def generate_delete_sql(llist):
+    values = []
+    for val in llist.split(','):
+        values.append('"{}"'.format(val))
+    return ',\n'.join(values)
+    pass
+
