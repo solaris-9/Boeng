@@ -136,7 +136,16 @@ def new_boeng_info(request):
                     for i in range(len(beacons)):
                         dItem['root_beacon_extender_{}'.format(i+1)] = beacons[i]
                 else:
-                    dItem[field] = row[field]
+                    match boengrule_fields[field]['type']:
+                        case 'str':
+                            dItem[field] = row[field]
+                        case 'bool':
+                            if field in ['separate_license', 'used_as_extender']:
+                                dItem[field] = "Yes" if row[field] else "No"
+                            else:
+                                dItem[field] = "True" if row[field] else "False"
+                    
+                    #dItem[field] = row[field]
             
             dResult['data']['items'].append(dItem)
 
@@ -194,8 +203,8 @@ def handle_boeng_rule_add(tbl, data):
                 {values}
             )""".format(
                 tbl=tbl,
-                fields=u.generate_long_sql(boengrule_fields, l_data)[0],
-                values=u.generate_long_sql(boengrule_fields, l_data)[1]
+                fields=u.generate_insert_sql(boengrule_fields, l_data)[0],
+                values=u.generate_insert_sql(boengrule_fields, l_data)[1]
             )
         print('handle_boeng_rule_add: sql = {}\n'.format(sql), file=fa, flush=True)
         conn.dcur.execute(sql)

@@ -21,64 +21,10 @@ from django.http import HttpResponse
 from pymysql.converters import escape_string
 from django.conf import settings
 from utils import analyzer_db
-
+import allocate.utils as u
 File_address = r'C:/reqLog/printlog1.txt'
 fa = open(File_address,'a')
 
-
-def GetJSONList(lTitle, lIssue):
-    lResult = []
-    for row in lIssue:
-        dIssue = {}
-        for t, c in zip(lTitle, row):
-            dIssue[t] = c
-            lResult.append(dIssue)
-    return lResult
-
-
-def List2String(lList):
-    sResult = "("
-    for i in lList:
-        m = escape_string(i)
-        m = "'" + m + "'"
-        sResult = sResult + m + "," 
-    sResult = sResult[:-1] + ")"
-    return sResult
-
-def repspecial(string):
-    sString = string.strip().replace('\u200b','')
-    return sString
-
-def strNum(strN,prefix,num):
-    strN += 1
-    sID = prefix + str(strN).zfill(num)
-    return sID
-
-
-def tbl_index(tblname,ID,SQLConn):
-    sql = "select count(%s) as num from %s " % (ID,tblname)
-    SQLConn.cur.execute(sql)      
-    SQLResult = SQLConn.cur.fetchall()    
-    count = SQLResult[0][0]
-    if count > 0 :    
-        sql="SELECT %s FROM %s ORDER BY %s" % (ID,tblname,ID)
-        SQLConn.cur.execute(sql)
-        SQLConn.conn.commit() 
-        last_result = [x[0] for x in SQLConn.cur.fetchall()][-1]
-        ST = last_result[1:]
-        strN = int(ST)
-    else:
-        strN = 0
-    return strN
-
-def check_numeric(input_str):
-    val = 0
-    input_str1 = input_str.replace(".","")
-    if input_str1.isdigit() or (input_str1[0] == '-' and input_str1[1:].isdigit()):
-        # 如果字符串只包含数字字符或者以负号开头并且剩余部分只包含数字字符，则认为是数值
-        return float(input_str)  # 返回数值表示
-    else:
-        return val
 
 
 def history(sID,sYID,sMail):
@@ -176,7 +122,7 @@ def customerid(request):
         FROM customer_id_map 
          %s
         ORDER BY customer_name"""
-        sRule = "WHERE customer_id IN %s" % List2String(lCustomerid)
+        sRule = "WHERE customer_id IN %s" % u.List2String(lCustomerid)
         SQLConn.cur.execute(cmd % sRule)
         SQLResult = SQLConn.cur.fetchall()
         SQLConn.close()
@@ -584,8 +530,8 @@ def request_edit(request):
         if count == 0 or sCustomer == '':
             tblname = 'tblrequest'
             ID = 'REID'
-            strN = tbl_index(tblname, ID, SQLConn)
-            sID = strNum(strN, 'B', 5)
+            strN = u.tbl_index(tblname, ID, SQLConn)
+            sID = u.strNum(strN, 'B', 5)
             sqlt1 = """insert into tblrequest (REID,customer,customersc,customerid,country,licensetype,plateform,alivedate,region,
             legal,multi_region,multi_legal,tenant_platform,traildate,trailnumber,devicenumber,devicenumber3,
             devicenumber6,volume,area,FCC,SLAlevel,HDM,HDMpo,fingerprinting,response_person,WBSnumber,additional) 
@@ -673,7 +619,7 @@ def request_edit(request):
     elif sType == '3':
         lYID = sDeletelist.split(',')
         SQLConn = analyzer_db()
-        sql = "DELETE FROM tbldevice WHERE ID IN %s" % List2String(lYID)
+        sql = "DELETE FROM tbldevice WHERE ID IN %s" % u.List2String(lYID)
         print('delete ef =', sql, sMail, sLastupdate, file=fa, flush=True)
         SQLConn.cur.execute(sql)
         SQLConn.conn.commit()
@@ -716,271 +662,6 @@ def request_edit(request):
             dResult = {}
             dResult['status'] = "failure"
         SQLConn.close()
-
-    return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
-
-boengrule_fields = {
-	'B_ID': {'show': True, 'type': 'str'},
-	'Customer': {'show': True, 'type': 'str'},
-	'device': {'show': True, 'type': 'str'},
-	'OPID': {'show': True, 'type': 'str'},
-	'whitelistmethod': {'show': True, 'type': 'str'},
-	'country_id': {'show': False, 'type': 'bool'},
-	'countryid': {'show': True, 'type': 'str'},
-	'ip_range': {'show': False, 'type': 'bool'},
-	'iprange': {'show': True, 'type': 'str'},
-	'serial_number': {'show': False, 'type': 'bool'},
-	'customer_name': {'show': True, 'type': 'str'},
-	'csv_file': {'show': True, 'type': 'str'},
-	'tr069': {'show': True, 'type': 'bool'},
-	'home_controller': {'show': True, 'type': 'bool'},
-	'rd_party_controller': {'show': True, 'type': 'bool'},
-	'tr069_acs': {'show': False, 'type': 'bool'},
-	'acs_url': {'show': True, 'type': 'str'},
-	'acs_username': {'show': True, 'type': 'str'},
-	'acs_password': {'show': True, 'type': 'str'},
-	'home_controller_usp': {'show': False, 'type': 'bool'},
-	'tenant_ref': {'show': True, 'type': 'str'},
-	'rd_party_usp': {'show': False, 'type': 'bool'},
-	'usp_addr': {'show': True, 'type': 'str'},
-	'usp_port': {'show': True, 'type': 'str'},
-	'auto_upgrade': {'show': True, 'type': 'bool'},
-	'ota_yes_1': {'show': False, 'type': 'bool'},
-	'separate_license': {'show': True, 'type': 'bool'},
-	'ota_yes_2': {'show': False, 'type': 'bool'},
-	'used_as_extender': {'show': True, 'type': 'bool'},
-	'root_beacon_flags': {'show': False, 'type': 'str'},
-    'root_beacon_model': {'show': True, 'type': 'str'},
-	'additional': {'show': True, 'type': 'str'},
-}
-
-def generate_long_sql(fields, data):
-    field_str = []
-    value_str = []
-    for f in fields.keys():
-        field_str.append('`{}`'.format(f))
-        if fields[f]['type'] == 'str':
-            value_str.append("'{}'".format(data[f]))
-        elif fields[f]['type'] == 'bool':
-            value_str.append('{}'.format(data[f]))
-
-    return (
-        ',\n'.join(field_str),
-        ',\n'.join(value_str)
-    )
-    pass
-
-def generate_update_sql(fields, data):
-    field_str = []
-    for f in fields.keys():
-        if fields[f]['type'] == 'str':
-            field_str.append("`{field}` = '{value}'".format(field=f, value=data[f]))
-        elif fields[f]['type'] == 'bool':
-            field_str.append("`{field}` = {value}".format(field=f, value=data[f]))
-
-    return ',\n'.join(field_str)
-    pass
-
-def generate_delete_sql(llist):
-    values = []
-    for val in llist.split(','):
-        values.append('"{}"'.format(val))
-    return ',\n'.join(values)
-    pass
-
-def fetch_boengrule(request):
-    try:
-        sType = request.GET['type']
-        b_id = request.GET['B_ID']
-    except:
-        return HttpResponse('Invalid Parameters', content_type='application/json')
-
-    dResult = {}
-    dResult['code'] = 20000
-    dResult['data'] = {}
-    dResult['data']['items'] = []
-
-    SQLConn = analyzer_db()
-    # 0 select menu
-    if sType == '0':
-        SQLCur = SQLConn.dcur
-        sql = 'select {fields} from tblBoengRule where `B_ID` = "{b_id}" '.format(
-            fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()]),
-            b_id=b_id
-        )
-        print(sql, file=fa, flush=True)
-        SQLCur.execute(sql)
-        SQLResult = SQLCur.fetchall()
-        SQLConn.close()
-        for row in SQLResult:
-            dItem = {}
-            for field in boengrule_fields.keys():
-                dItem[field] = row[field]
-            dResult['data']['items'].append(dItem)
-    return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
-
-def new_boeng_info(request):
-        # ud = request.get_full_path()
-    # print(ud, file=fa, flush=True)
-    try:
-        sMail = request.GET['mail']
-        sLevel = request.GET['level']
-    except:
-        return HttpResponse('Invalid Parameters', content_type='application/json')
-
-    dResult = {}
-    dResult['code'] = 20000
-    dResult['data'] = {}
-    dResult['data']['items'] = []
-
-    if sLevel != 'undefined':
-        cmd = """
-            SELECT
-                {fields}
-            FROM
-                tblBoengRule 
-            ORDER BY `Customer` 
-        """.format(
-            fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()])
-        )
-        # if sLevel < '5':
-        #     sRule = """WHERE Creator='%s' or Modifier='%s' """ % (sMail, sMail)
-        # else:
-        #     sRule = ''
-        SQLConn = analyzer_db()
-        print('new_boeng_info, sql = {}'.format(cmd), file=fa,flush=True )
-        SQLConn.dcur.execute(cmd)
-        SQLResult = SQLConn.dcur.fetchall()
-        SQLConn.close()
-
-        for row in SQLResult:
-            dItem = {}
-            for field in boengrule_fields.keys():
-                if field in ['root_beacon_model']:
-                    beacons = row[field].split('###')
-                    for i in range(len(beacons)):
-                        dItem['root_beacon_extender_{}'.format(i+1)] = beacons[i]
-                else:
-                    dItem[field] = row[field]
-            
-            dResult['data']['items'].append(dItem)
-
-    return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
-    pass
-
-def handle_boeng_rule_edit(tbl, data):
-    conn = analyzer_db()
-
-    sql = 'update {tbl} set {fields} where `B_ID` = "{B_ID}"'.format(
-        tbl=tbl,
-        fields=generate_update_sql(boengrule_fields, data),
-        B_ID=data['B_ID']
-    )
-    print('handle_boeng_rule_edit, sql = {sql}'.format(sql=sql), file=fa, flush=True)
-    conn.dcur.execute(sql)
-    conn.commit()
-    conn.close()
-
-    pass
-
-def handle_boeng_rule_delete(tbl, llist):
-    conn = analyzer_db()
-
-    sql = 'delete from {tbl} where `B_ID` in ({B_LIST})'.format(
-        tbl=tbl,
-        B_LIST=generate_delete_sql(llist)
-    )
-    print('handle_boeng_rule_delete, sql = {sql}'.format(sql=sql), file=fa, flush=True)
-    conn.dcur.execute(sql)
-    conn.commit()
-    conn.close()
-
-    pass
-
-def handle_boeng_rule_add(tbl, data):
-    l_data = data
-    conn = analyzer_db()
-    tbl = 'tblBoengRule'
-    # check if exists
-    sql = "select count(Customer) as count from {} where customer='{}'".format(
-        tbl, 
-        l_data['Customer']
-    )
-    conn.dcur.execute(sql)
-    res = conn.dcur.fetchall()
-
-    # to add
-    if res[0]['count'] == 0 or l_data['Customer'] == '':
-        l_data['B_ID'] = strNum(tbl_index(tbl, 'B_ID', conn), 'B', 10)
-
-        sql = """insert into {tbl} (
-                {fields}
-            ) values (
-                {values}
-            )""".format(
-                tbl=tbl,
-                fields=generate_long_sql(boengrule_fields, l_data)[0],
-                values=generate_long_sql(boengrule_fields, l_data)[1]
-            )
-        print('handle_boeng_rule_add: sql = {}\n'.format(sql), file=fa, flush=True)
-        conn.dcur.execute(sql)
-        rt =  'Add successful, back and refresh page to show it'
-    else:
-        rt = "The customer is already added, don't create again."
-
-
-    conn.commit()
-    conn.close()
-    return rt
-    pass
-
-def new_boeng_edit(request):
-    print('request.body:', request.body.decode('utf-8'),file=fa,flush=True )
-    dResult = {}
-    dResult['code'] = 20000
-    dResult['data'] = {}
-    dResult['data']['status'] = []
-
-    try:
-        sType = ''
-        sLastupdate = datetime.today().strftime('%Y-%m-%d')
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            if data:
-                sType = data.get('type')
-                sMail = data.get('mail')
-
-                if sType[:1] == '1' or sType == '2':
-                    l_data = {}
-                    for field in [f for f in boengrule_fields.keys() if f != 'B_ID']:
-                        l_data[field] = data.get(field)
-                if sType == '2':
-                    l_data['B_ID'] = data.get('B_ID')
-                elif sType == '3':
-                    l_delete_list = data.get('deletelist')
-
-    except Exception as e:
-        print('Invalid Parameters:', e, file=fa,flush=True )
-        dResult['data']['status'] = "Invalid Parameters"
-        return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
-
-    # 1x add
-    if sType[:1] == '1':
-        rt = handle_boeng_rule_add('tblBoengRule', l_data)
-        dResult['data']['status'] = "Edit successful"
-            
-    # 2 edit
-    elif sType == '2':
-        handle_boeng_rule_edit('tblBoengRule', l_data)
-        dResult['data']['status'] = "Edit successful"
-        pass
-
-    # 3 delete
-    elif sType == '3':
-        handle_boeng_rule_delete('tblBoengRule', l_delete_list)
-        pass
-        dResult['data']['status'] = "Delete successful"
-
 
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
@@ -1146,8 +827,8 @@ def devicetype_edit(request):
                 SQLConn = analyzer_db()
                 tblname = 'tbldevicetype'
                 ID = 'DeviceId'
-                strN = tbl_index(tblname,ID,SQLConn)
-                sID = strNum(strN,'D',5)
+                strN = u.tbl_index(tblname,ID,SQLConn)
+                sID = u.strNum(strN,'D',5)
                 sqlt = """insert into tbldevicetype (DeviceId, DeviceName, MACNUM, Class,DHistory,Modifier, RecordTime) 
                         values(%s,%s,%s,%s,%s,%s,%s)"""
                 values = (sID, sDevicename, sMACNUM, sClass, sDHistory, sMail, sRecordTime)

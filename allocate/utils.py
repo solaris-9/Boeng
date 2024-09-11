@@ -76,45 +76,9 @@ def check_numeric(input_str):
     else:
         return val
 
-    print('request.body:', request.body.decode('utf-8'), file=fa, flush=True)
-    dResult = {}
-    dResult['code'] = 20000
-    dResult['data'] = {}
-    dResult['data']['status'] = []
-    dResult['data']['items'] = []
-    try:
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            if data:
-                sMail = data.get('mail')
-                print('Mail=', sMail, file=fa, flush=True)
-    except:
-        dResult['data']['status'] = "Invalid Parameters"
-        return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
-
-    cmd = """
-            SELECT
-               Code,DeviceName,Description,CodeId
-            FROM
-              v_code
-            """
-
-    SQLConn = analyzer_db()
-    SQLConn.cur.execute(cmd)
-    SQLResult = SQLConn.cur.fetchall()
-    SQLConn.close()
-
-    for row in SQLResult:
-        dItem = {}
-        dItem['Code'] = row[0]
-        dItem['DeviceName'] = row[1]
-        dItem['Description'] = row[2]
-        dItem['CodeId'] = row[3]
-        dResult['data']['items'].append(dItem)
-    return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
 
-def generate_long_sql(fields, data):
+def generate_insert_sql(fields, data):
     field_str = []
     value_str = []
     for f in fields.keys():
