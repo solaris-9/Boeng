@@ -21,12 +21,16 @@ from django.http import HttpResponse
 from pymysql.converters import escape_string
 from django.conf import settings
 from utils import analyzer_db
-
+from utils import DatabaseConnector as dc
+import pandas as pd
+import numpy as np
 import allocate.utils as u
 import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='C:/reqLog/boengLog.txt', level=logging.DEBUG)
+
+db = dc()
 
 boengrule_fields = {
 	'B_ID': {'show': True, 'type': 'str'},
@@ -79,30 +83,33 @@ def fetch_boengrule(request):
     dResult['data'] = {}
     dResult['data']['items'] = []
 
-    SQLConn = analyzer_db()
+    #SQLConn = analyzer_db()
     # 0 select menu
     if sType == '0':
-        SQLCur = SQLConn.dcur
+        #SQLCur = SQLConn.dcur
         sql = 'select {fields} from tblBoengRule where `B_ID` = "{b_id}" '.format(
             fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()]),
             b_id=b_id
         )
         logger.debug(sql)
-        SQLCur.execute(sql)
-        SQLResult = SQLCur.fetchall()
-        SQLConn.close()
-        for row in SQLResult:
+        #SQLCur.execute(sql)
+        #SQLResult = SQLCur.fetchall()
+        #SQLConn.close()
+        df = db.read_query(sql)
+        for i_index in df.index:
             dItem = {}
             for field in boengrule_fields.keys():
-                if type(row[field]) == datetime:
-                    dItem[field] = row[field].__str__()
+                if type(df.at[i_index, field]) == pd.Timestamp:
+                    dItem[field] = str(df.at[i_index, field])
+                elif type(df.at[i_index, field]) == np.int64:
+                    dItem[field] = int(df.at[i_index, field])
                 else:
-                    dItem[field] = row[field]
+                    dItem[field] = df.at[i_index, field]
             dResult['data']['items'].append(dItem)
+        logger.debug(dResult)
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
 def new_boeng_info(request):
-        # ud = request.get_full_path()
     try:
         sMail = request.GET['mail']
         sLevel = request.GET['level']
@@ -124,33 +131,28 @@ def new_boeng_info(request):
         #     sRule = """WHERE Creator='%s' or Modifier='%s' """ % (sMail, sMail)
         # else:
         #     sRule = ''
-        SQLConn = analyzer_db()
-        logger.debug('new_boeng_info, sql = {}'.format(cmd))
-        SQLConn.dcur.execute(cmd)
-        SQLResult = SQLConn.dcur.fetchall()
-        SQLConn.close()
 
-        for row in SQLResult:
+
+        logger.debug('new_boeng_info, sql = {}'.format(cmd))
+
+        df = db.read_table('tblboengrule')
+        df = df.replace({np.nan: None}).fillna('')
+        for i_index in df.index:
             dItem = {}
             for field in boengrule_fields.keys():
                 if field in ['root_beacon_model']:
-                    beacons = row[field].split('###')
+                    beacons = df.at[i_index, field].split('###')
                     for i in range(len(beacons)):
                         dItem['root_beacon_extender_{}'.format(i+1)] = beacons[i]
                 else:
                     match boengrule_fields[field]['type']:
                         case 'str':
-                            if type(row[field]) == str:
-                                dItem[field] = row[field]
-                            else:
-                                dItem[field] = row[field].__str__()
+                            dItem[field] = str(df.at[i_index, field])
                         case 'bool':
                             if field in ['separate_license', 'used_as_extender']:
-                                dItem[field] = "Yes" if row[field] else "No"
+                                dItem[field] = "Yes" if df.at[i_index, field] else "No"
                             else:
-                                dItem[field] = "True" if row[field] else "False"
-                    
-                    #dItem[field] = row[field]
+                                dItem[field] = "True" if df.at[i_index, field] else "False"
             
             dResult['data']['items'].append(dItem)
     logger.debug(dResult)
@@ -159,8 +161,6 @@ def new_boeng_info(request):
     pass
 
 def handle_boeng_rule_edit(tbl, data):
-    conn = analyzer_db()
-
     generated_str = u.generate_update_sql(boengrule_fields, data, ['creator', 'createon'])
 
     sql = 'update {tbl} set {fields} where `B_ID` = "{B_ID}"'.format(
@@ -169,62 +169,50 @@ def handle_boeng_rule_edit(tbl, data):
         B_ID=data['B_ID']
     )
     logger.debug('handle_boeng_rule_edit, sql = {sql}'.format(sql=sql))
-    conn.dcur.execute(sql)
-    conn.commit()
-    conn.close()
+    db.execute(sql)
 
     pass
 
 def handle_boeng_rule_delete(tbl, llist):
-    conn = analyzer_db()
-
     sql = 'delete from {tbl} where `B_ID` in ({B_LIST})'.format(
         tbl=tbl,
         B_LIST=u.generate_delete_sql(llist)
     )
     logger.debug('handle_boeng_rule_delete, sql = {sql}'.format(sql=sql))
-    conn.dcur.execute(sql)
-    conn.commit()
-    conn.close()
+    db.execute(sql)
 
     pass
 
 def handle_boeng_rule_add(tbl, data):
     l_data = data
-    conn = analyzer_db()
     tbl = 'tblBoengRule'
     # check if exists
     sql = "select count(Customer) as count from {} where customer='{}'".format(
         tbl, 
         l_data['Customer']
     )
-    conn.dcur.execute(sql)
-    res = conn.dcur.fetchall()
+    count = db.read_query(sql).at[0, 'count']
 
     # to add
-    if res[0]['count'] == 0 or l_data['Customer'] == '':
-        l_data['B_ID'] = u.strNum(u.tbl_index(tbl, 'B_ID', conn), 'B', 10)
+    if count == 0 or l_data['Customer'] == '':
+        l_data['B_ID'] = u.strNum(u.gen_tbl_index(tbl, 'B_ID', db), 'B', 10)
 
-        generated_str = u.generate_insert_sql(boengrule_fields, l_data, ['modifier', 'modifiedon'])
+        generated_str = u.generate_insert_sql(boengrule_fields, l_data, skip=['modifier', 'modifiedon'])
 
-        sql = """insert into {tbl} (
-                {fields}
-            ) values (
-                {values}
-            )""".format(
+        sql = "insert into {tbl} ({fields}) values ({values})".format(
                 tbl=tbl,
                 fields=generated_str[0],
                 values=generated_str[1]
             )
         logger.debug('handle_boeng_rule_add: sql = {}\n'.format(sql))
-        conn.dcur.execute(sql)
+        db.execute(sql)
         rt =  'Add successful, back and refresh page to show it'
     else:
         rt = "The customer is already added, don't create again."
 
 
-    conn.commit()
-    conn.close()
+    #conn.commit()
+    #conn.close()
     return rt
     pass
 

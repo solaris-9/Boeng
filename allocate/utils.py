@@ -21,6 +21,9 @@ from django.http import HttpResponse
 from pymysql.converters import escape_string
 from django.conf import settings
 from utils import analyzer_db
+import pandas as pd
+import re
+import logging
 
 def GetJSONList(lTitle, lIssue):
     lResult = []
@@ -50,7 +53,6 @@ def strNum(strN,prefix,num):
     sID = prefix + str(strN).zfill(num)
     return sID
 
-
 def tbl_index(tblname,ID,SQLConn):
     sql = "select count(%s) as num from %s " % (ID,tblname)
     SQLConn.cur.execute(sql)      
@@ -67,6 +69,24 @@ def tbl_index(tblname,ID,SQLConn):
         strN = 0
     return strN
 
+def gen_tbl_index(tbl, id, db):
+    sql = "select max(`{}`) as mm from {}".format(
+        id, 
+        tbl
+    )
+    logging.getLogger(__name__).debug(sql)
+    df = db.read_query(sql)      
+    logging.getLogger(__name__).debug(df)
+    if len(df.index) > 0 :
+        m = re.search(r'(\d+)', df.at[0, 'mm'])
+        if m:
+            res = int(m.group(1))
+        else:
+            res = 0
+    else:
+        res = 0
+    return res
+
 def check_numeric(input_str):
     val = 0
     input_str1 = input_str.replace(".","")
@@ -78,10 +98,12 @@ def check_numeric(input_str):
 
 
 
-def generate_insert_sql(fields, data):
+def generate_insert_sql(fields, data, skip):
     field_str = []
     value_str = []
     for f in fields.keys():
+        if f in skip:
+            continue
         field_str.append('`{}`'.format(f))
         if fields[f]['type'] == 'str':
             value_str.append("'{}'".format(data[f]))
@@ -89,20 +111,22 @@ def generate_insert_sql(fields, data):
             value_str.append('{}'.format(data[f]))
 
     return (
-        ',\n'.join(field_str),
-        ',\n'.join(value_str)
+        ','.join(field_str),
+        ','.join(value_str)
     )
     pass
 
-def generate_update_sql(fields, data):
+def generate_update_sql(fields, data, skip):
     field_str = []
     for f in fields.keys():
+        if f in skip:
+            continue
         if fields[f]['type'] == 'str':
             field_str.append("`{field}` = '{value}'".format(field=f, value=data[f]))
         elif fields[f]['type'] == 'bool':
             field_str.append("`{field}` = {value}".format(field=f, value=data[f]))
 
-    return ',\n'.join(field_str)
+    return ','.join(field_str)
     pass
 
 def generate_delete_sql(llist):

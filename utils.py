@@ -4,6 +4,10 @@ import pymysql
 import openai
 import time, base64, hmac
 from django.conf import settings
+import pandas as pd
+from sqlalchemy import create_engine, MetaData, text
+from urllib.parse import quote_plus
+import logging
 
 class vue_response:
 
@@ -283,3 +287,43 @@ def verify_token(key, token):
     return False
   # token certification success
   return True
+
+
+
+class DatabaseConnector:
+    metadata = None
+    engine = None
+    connection = None
+    count = 0
+    _db = None
+    _cs = None
+    def __init__(self, db=None, cs=None):
+        self._db = db or os.getenv('H_DB_NAME')
+        self._cs = cs or 'mysql+pymysql://{}:{}@{}:{}/'.format(
+           os.getenv('H_DB_USERNAME'),
+           quote_plus(os.getenv('H_DB_PASSWORD')),
+           os.getenv('E_DB_HOST'),
+           os.getenv('C_DB_PORT')
+        )
+        print(self._cs)
+        self.metadata = MetaData()
+        self.engine = create_engine('{}{}'.format(self._cs, self._db))
+        self.connection = self.engine.connect()
+    def read_table(self, name):
+        return pd.read_sql(name, self.engine)
+        pass
+    def read_query(self, query):
+        return pd.read_sql_query(query, self.engine)
+        pass
+    def execute(self, cmd):
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(
+                    text(cmd)
+                )
+                conn.commit()
+        except Exception as e:
+            logging.getLogger(__name__).debug('!!! ERROR: {}'.format(e))
+        pass
+    
+    
