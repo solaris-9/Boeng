@@ -23,10 +23,10 @@ from django.conf import settings
 from utils import analyzer_db
 
 import allocate.utils as u
+import logging
 
-File_address = r'C:/reqLog/printlog1.txt'
-fa = open(File_address,'a')
-
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='C:/reqLog/boengLog.txt', level=logging.DEBUG)
 
 boengrule_fields = {
 	'B_ID': {'show': True, 'type': 'str'},
@@ -61,6 +61,10 @@ boengrule_fields = {
 	'root_beacon_flags': {'show': False, 'type': 'str'},
     'root_beacon_model': {'show': True, 'type': 'str'},
 	'additional': {'show': True, 'type': 'str'},
+    'creator': {'show': True, 'type': 'str'},
+    'createon': {'show': True, 'type': 'str'},
+    'modifier': {'show': True, 'type': 'str'},
+    'modifiedon': {'show': True, 'type': 'str'},
 }
 
 def fetch_boengrule(request):
@@ -83,20 +87,22 @@ def fetch_boengrule(request):
             fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()]),
             b_id=b_id
         )
-        print(sql, file=fa, flush=True)
+        logger.debug(sql)
         SQLCur.execute(sql)
         SQLResult = SQLCur.fetchall()
         SQLConn.close()
         for row in SQLResult:
             dItem = {}
             for field in boengrule_fields.keys():
-                dItem[field] = row[field]
+                if type(row[field]) == datetime:
+                    dItem[field] = row[field].__str__()
+                else:
+                    dItem[field] = row[field]
             dResult['data']['items'].append(dItem)
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
 def new_boeng_info(request):
         # ud = request.get_full_path()
-    # print(ud, file=fa, flush=True)
     try:
         sMail = request.GET['mail']
         sLevel = request.GET['level']
@@ -109,21 +115,17 @@ def new_boeng_info(request):
     dResult['data']['items'] = []
 
     if sLevel != 'undefined':
-        cmd = """
-            SELECT
-                {fields}
-            FROM
-                tblBoengRule 
-            ORDER BY `Customer` 
-        """.format(
-            fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()])
+        cmd = 'SELECT {fields} FROM tblBoengRule ORDER BY `Customer`'.format(
+            fields=','.join(
+                ['`{field}`'.format(field=f) for f in boengrule_fields.keys()]
+            )
         )
         # if sLevel < '5':
         #     sRule = """WHERE Creator='%s' or Modifier='%s' """ % (sMail, sMail)
         # else:
         #     sRule = ''
         SQLConn = analyzer_db()
-        print('new_boeng_info, sql = {}'.format(cmd), file=fa,flush=True )
+        logger.debug('new_boeng_info, sql = {}'.format(cmd))
         SQLConn.dcur.execute(cmd)
         SQLResult = SQLConn.dcur.fetchall()
         SQLConn.close()
@@ -138,7 +140,10 @@ def new_boeng_info(request):
                 else:
                     match boengrule_fields[field]['type']:
                         case 'str':
-                            dItem[field] = row[field]
+                            if type(row[field]) == str:
+                                dItem[field] = row[field]
+                            else:
+                                dItem[field] = row[field].__str__()
                         case 'bool':
                             if field in ['separate_license', 'used_as_extender']:
                                 dItem[field] = "Yes" if row[field] else "No"
@@ -148,6 +153,7 @@ def new_boeng_info(request):
                     #dItem[field] = row[field]
             
             dResult['data']['items'].append(dItem)
+    logger.debug(dResult)
 
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
     pass
@@ -155,12 +161,14 @@ def new_boeng_info(request):
 def handle_boeng_rule_edit(tbl, data):
     conn = analyzer_db()
 
+    generated_str = u.generate_update_sql(boengrule_fields, data, ['creator', 'createon'])
+
     sql = 'update {tbl} set {fields} where `B_ID` = "{B_ID}"'.format(
         tbl=tbl,
-        fields=u.generate_update_sql(boengrule_fields, data),
+        fields=generated_str,
         B_ID=data['B_ID']
     )
-    print('handle_boeng_rule_edit, sql = {sql}'.format(sql=sql), file=fa, flush=True)
+    logger.debug('handle_boeng_rule_edit, sql = {sql}'.format(sql=sql))
     conn.dcur.execute(sql)
     conn.commit()
     conn.close()
@@ -174,7 +182,7 @@ def handle_boeng_rule_delete(tbl, llist):
         tbl=tbl,
         B_LIST=u.generate_delete_sql(llist)
     )
-    print('handle_boeng_rule_delete, sql = {sql}'.format(sql=sql), file=fa, flush=True)
+    logger.debug('handle_boeng_rule_delete, sql = {sql}'.format(sql=sql))
     conn.dcur.execute(sql)
     conn.commit()
     conn.close()
@@ -197,16 +205,18 @@ def handle_boeng_rule_add(tbl, data):
     if res[0]['count'] == 0 or l_data['Customer'] == '':
         l_data['B_ID'] = u.strNum(u.tbl_index(tbl, 'B_ID', conn), 'B', 10)
 
+        generated_str = u.generate_insert_sql(boengrule_fields, l_data, ['modifier', 'modifiedon'])
+
         sql = """insert into {tbl} (
                 {fields}
             ) values (
                 {values}
             )""".format(
                 tbl=tbl,
-                fields=u.generate_insert_sql(boengrule_fields, l_data)[0],
-                values=u.generate_insert_sql(boengrule_fields, l_data)[1]
+                fields=generated_str[0],
+                values=generated_str[1]
             )
-        print('handle_boeng_rule_add: sql = {}\n'.format(sql), file=fa, flush=True)
+        logger.debug('handle_boeng_rule_add: sql = {}\n'.format(sql))
         conn.dcur.execute(sql)
         rt =  'Add successful, back and refresh page to show it'
     else:
@@ -219,7 +229,7 @@ def handle_boeng_rule_add(tbl, data):
     pass
 
 def new_boeng_edit(request):
-    print('request.body:', request.body.decode('utf-8'),file=fa,flush=True )
+    logger.debug('request.body:', request.body.decode('utf-8'))
     dResult = {}
     dResult['code'] = 20000
     dResult['data'] = {}
@@ -244,7 +254,7 @@ def new_boeng_edit(request):
                     l_delete_list = data.get('deletelist')
 
     except Exception as e:
-        print('Invalid Parameters:', e, file=fa,flush=True )
+        logger.debug('Invalid Parameters: {}'.format(e))
         dResult['data']['status'] = "Invalid Parameters"
         return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
