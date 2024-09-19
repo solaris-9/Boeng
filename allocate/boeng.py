@@ -28,9 +28,17 @@ import allocate.utils as u
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='C:/reqLog/boengLog.txt', level=logging.DEBUG)
+#logging.basicConfig(filename='C:/reqLog/boengLog.txt', level=logging.DEBUG, format='%(asctime)s')
+logging.basicConfig(
+    filename='C:/reqLog/boengLog.txt', 
+    level=logging.DEBUG,
+    format="{asctime}::{message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 db = dc()
+tbl = 'tblboengrule'
 
 boengrule_fields = {
 	'B_ID': {'show': True, 'type': 'str'},
@@ -106,7 +114,7 @@ def fetch_boengrule(request):
                 else:
                     dItem[field] = df.at[i_index, field]
             dResult['data']['items'].append(dItem)
-        logger.debug(dResult)
+        #logger.debug(dResult)
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
 def new_boeng_info(request):
@@ -155,7 +163,7 @@ def new_boeng_info(request):
                                 dItem[field] = "True" if df.at[i_index, field] else "False"
             
             dResult['data']['items'].append(dItem)
-    logger.debug(dResult)
+    #logger.debug(dResult)
 
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
     pass
@@ -185,14 +193,15 @@ def handle_boeng_rule_delete(tbl, llist):
 
 def handle_boeng_rule_add(tbl, data):
     l_data = data
-    tbl = 'tblBoengRule'
-    # check if exists
+    
+    #check if exists
     sql = "select count(Customer) as count from {} where customer='{}'".format(
         tbl, 
         l_data['Customer']
     )
     count = db.read_query(sql).at[0, 'count']
 
+    logger.debug(f'count = {count}')
     # to add
     if count == 0 or l_data['Customer'] == '':
         l_data['B_ID'] = u.strNum(u.gen_tbl_index(tbl, 'B_ID', db), 'B', 10)
@@ -208,7 +217,7 @@ def handle_boeng_rule_add(tbl, data):
         db.execute(sql)
         rt =  'Add successful, back and refresh page to show it'
     else:
-        rt = "The customer is already added, don't create again."
+        rt = "The customer has already been added, unabled to be added again!"
 
 
     #conn.commit()
@@ -249,7 +258,7 @@ def new_boeng_edit(request):
     # 1x add
     if sType[:1] == '1':
         rt = handle_boeng_rule_add('tblBoengRule', l_data)
-        dResult['data']['status'] = "Edit successful"
+        dResult['data']['status'] = rt
             
     # 2 edit
     elif sType == '2':
