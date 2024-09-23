@@ -8,6 +8,7 @@ import pandas as pd
 from sqlalchemy import create_engine, MetaData, text
 from urllib.parse import quote_plus
 import logging
+from request import settings as rs
 
 class vue_response:
 
@@ -297,14 +298,23 @@ class DatabaseConnector:
     count = 0
     _db = None
     _cs = None
-    def __init__(self, db=None, cs=None):
-        self._db = db or os.getenv('H_DB_NAME')
-        self._cs = cs or 'mysql+pymysql://{}:{}@{}:{}/'.format(
-           os.getenv('H_DB_USERNAME'),
-           quote_plus(os.getenv('H_DB_PASSWORD')),
-           os.getenv('E_DB_HOST'),
-           os.getenv('C_DB_PORT')
-        )
+    def __init__(self, db):
+        self._db = db
+        if db == 'requestdb':
+            self._cs = 'mysql+pymysql://{}:{}@{}:{}/'.format(
+                os.getenv('H_DB_USERNAME'),
+                quote_plus(os.getenv('H_DB_PASSWORD')),
+                os.getenv('E_DB_HOST'),
+                os.getenv('C_DB_PORT')
+            )
+        elif db == 'customerdb':
+            self._cs = 'mysql+pymysql://{}:{}@{}:{}/'.format(
+                rs.BC_DB['username'],
+                quote_plus(rs.BC_DB['password']),
+                rs.BC_DB['host'],
+                rs.BC_DB['port']
+            )
+
         print(self._cs)
         self.metadata = MetaData()
         self.engine = create_engine('{}{}'.format(self._cs, self._db))

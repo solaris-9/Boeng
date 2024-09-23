@@ -37,7 +37,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-db = dc()
+db = dc('requestdb')
 tbl = 'tblboengrule'
 
 boengrule_fields = {
@@ -95,11 +95,12 @@ def fetch_boengrule(request):
     # 0 select menu
     if sType == '0':
         #SQLCur = SQLConn.dcur
-        sql = 'select {fields} from tblBoengRule where `B_ID` = "{b_id}" '.format(
+        sql = 'select {fields} from {tbl} where `B_ID` = "{b_id}" '.format(
             fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()]),
+            tbl=tbl,
             b_id=b_id
         )
-        logger.debug(sql)
+        logger.debug(f'fetch_boengrule, sql = {sql}')
         #SQLCur.execute(sql)
         #SQLResult = SQLCur.fetchall()
         #SQLConn.close()
@@ -130,10 +131,11 @@ def new_boeng_info(request):
     dResult['data']['items'] = []
 
     if sLevel != 'undefined':
-        cmd = 'SELECT {fields} FROM tblBoengRule ORDER BY `Customer`'.format(
+        cmd = 'SELECT {fields} FROM {tbl} ORDER BY `Customer`'.format(
             fields=','.join(
                 ['`{field}`'.format(field=f) for f in boengrule_fields.keys()]
-            )
+            ),
+            tbl=tbl
         )
         # if sLevel < '5':
         #     sRule = """WHERE Creator='%s' or Modifier='%s' """ % (sMail, sMail)
@@ -141,9 +143,9 @@ def new_boeng_info(request):
         #     sRule = ''
 
 
-        logger.debug('new_boeng_info, sql = {}'.format(cmd))
+        logger.debug(f'new_boeng_info, sql = {cmd}')
 
-        df = db.read_table('tblboengrule')
+        df = db.read_table(tbl)
         df = df.replace({np.nan: None}).fillna('')
         for i_index in df.index:
             dItem = {}
@@ -176,7 +178,7 @@ def handle_boeng_rule_edit(tbl, data):
         fields=generated_str,
         B_ID=data['B_ID']
     )
-    logger.debug('handle_boeng_rule_edit, sql = {sql}'.format(sql=sql))
+    logger.debug(f'handle_boeng_rule_edit, sql = {sql}')
     db.execute(sql)
 
     pass
@@ -186,7 +188,7 @@ def handle_boeng_rule_delete(tbl, llist):
         tbl=tbl,
         B_LIST=u.generate_delete_sql(llist)
     )
-    logger.debug('handle_boeng_rule_delete, sql = {sql}'.format(sql=sql))
+    logger.debug(f'handle_boeng_rule_delete, sql = {sql}')
     db.execute(sql)
 
     pass
@@ -195,38 +197,35 @@ def handle_boeng_rule_add(tbl, data):
     l_data = data
     
     #check if exists
-    sql = "select count(Customer) as count from {} where customer='{}'".format(
-        tbl, 
-        l_data['Customer']
-    )
-    count = db.read_query(sql).at[0, 'count']
+    # sql = "select count(Customer) as count from {} where customer='{}'".format(
+    #     tbl, 
+    #     l_data['Customer']
+    # )
+    # count = db.read_query(sql).at[0, 'count']
 
-    logger.debug(f'count = {count}')
-    # to add
-    if count == 0 or l_data['Customer'] == '':
-        l_data['B_ID'] = u.strNum(u.gen_tbl_index(tbl, 'B_ID', db), 'B', 10)
+    # logger.debug(f'handle_boeng_rule_add, count = {count}')
+    # # to add
+    # if count == 0 or l_data['Customer'] == '':
+    l_data['B_ID'] = u.strNum(u.gen_tbl_index(tbl, 'B_ID', db), 'B', 10)
 
-        generated_str = u.generate_insert_sql(boengrule_fields, l_data, skip=['modifier', 'modifiedon'])
+    generated_str = u.generate_insert_sql(boengrule_fields, l_data, skip=['modifier', 'modifiedon'])
 
-        sql = "insert into {tbl} ({fields}) values ({values})".format(
-                tbl=tbl,
-                fields=generated_str[0],
-                values=generated_str[1]
-            )
-        logger.debug('handle_boeng_rule_add: sql = {}\n'.format(sql))
-        db.execute(sql)
-        rt =  'Add successful, back and refresh page to show it'
-    else:
-        rt = "The customer has already been added, unabled to be added again!"
+    sql = "insert into {tbl} ({fields}) values ({values})".format(
+            tbl=tbl,
+            fields=generated_str[0],
+            values=generated_str[1]
+        )
+    logger.debug(f'handle_boeng_rule_add: sql = {sql}')
+    db.execute(sql)
+    rt =  'Add successful, back and refresh page to show it'
+    # else:
+    #     rt = "The customer has already been added, unabled to be added again!"
 
-
-    #conn.commit()
-    #conn.close()
     return rt
     pass
 
 def new_boeng_edit(request):
-    logger.debug('request.body:', request.body.decode('utf-8'))
+    logger.debug('new_boeng_edit, request.body:', request.body.decode('utf-8'))
     dResult = {}
     dResult['code'] = 20000
     dResult['data'] = {}
@@ -251,24 +250,24 @@ def new_boeng_edit(request):
                     l_delete_list = data.get('deletelist')
 
     except Exception as e:
-        logger.debug('Invalid Parameters: {}'.format(e))
+        logger.debug(f'new_boeng_edit, Invalid Parameters: {e}')
         dResult['data']['status'] = "Invalid Parameters"
         return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
     # 1x add
     if sType[:1] == '1':
-        rt = handle_boeng_rule_add('tblBoengRule', l_data)
+        rt = handle_boeng_rule_add(tbl, l_data)
         dResult['data']['status'] = rt
             
     # 2 edit
     elif sType == '2':
-        handle_boeng_rule_edit('tblBoengRule', l_data)
+        handle_boeng_rule_edit(tbl, l_data)
         dResult['data']['status'] = "Edit successful"
         pass
 
     # 3 delete
     elif sType == '3':
-        handle_boeng_rule_delete('tblBoengRule', l_delete_list)
+        handle_boeng_rule_delete(tbl, l_delete_list)
         pass
         dResult['data']['status'] = "Delete successful"
 
