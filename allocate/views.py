@@ -201,10 +201,16 @@ def devicelist(request):
                               )
 
     SQLCur = SQLConn.cursor()
+    # sql = """
+    #     SELECT Summary FROM jira_issues_product 
+    #     WHERE Left(Summary,1) = 'G' OR Left(Summary,1) = 'X' OR Left(Summary,3) = 'HA-'
+    #     OR Left(Summary,6) = 'Beacon' 
+    #     ORDER BY Summary
+    #     """
+
     sql = """
-        SELECT Summary FROM jira_issues_product 
-        WHERE Left(Summary,1) = 'G' OR Left(Summary,1) = 'X' OR Left(Summary,3) = 'HA-'
-        OR Left(Summary,6) = 'Beacon' 
+        SELECT `Summary` FROM `jira_issues_product` 
+        WHERE `Summary` like 'Beacon%%' 
         ORDER BY Summary
         """
     SQLCur.execute(sql)
