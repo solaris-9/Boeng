@@ -273,3 +273,50 @@ def new_boeng_edit(request):
 
 
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
+
+
+def nwcc_list(request):
+    cus = dc('customerdb')
+    nwcc_fields = [
+        'Customer',
+        'OPID',
+        'Platform'
+    ]
+    df = cus.read_query(
+        'select {fields} from `cdb_issues_saas`'.format(
+            fields=','.join(
+                [f'`{field}`' for field in nwcc_fields]
+            )
+        )
+    )
+
+    res = {}
+    res['code'] = 20000
+    res['data'] = {}
+    res['data']['items'] = []
+    for i_index in df.index:
+        item = {}
+        for field in nwcc_fields:
+            item[field] = df.at[i_index, field]
+        res['data']['items'].append(item)
+    
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+    pass
+
+def opid_list(request):
+    cus = dc('customerdb')
+    sql = "select distinct `OPID` from `cdb_issues_preconfig` where `BusinessLine` = 'BBD-NWF' order by `OPID` ASC"
+    logger.debug('opid_list', f'sql = {sql}')
+    df = cus.read_query(sql)
+
+    res = {}
+    res['code'] = 20000
+    res['data'] = {}
+    res['data']['items'] = []
+    for i_index in df.index:
+        item = {}
+        item['OPID'] = df.at[i_index, 'OPID']
+        res['data']['items'].append(item)
+    
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+    pass

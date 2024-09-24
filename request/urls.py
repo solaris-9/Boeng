@@ -36,6 +36,8 @@ urlpatterns = [
     path('request/gpi/allocate/new_boeng_info', boeng_views.new_boeng_info),
     path('request/gpi/allocate/new_boeng_edit', boeng_views.new_boeng_edit),
     path('request/gpi/allocate/fetch_boengrule', boeng_views.fetch_boengrule),
+    path('request/gpi/allocate/nwcc_list', boeng_views.nwcc_list),
+    path('request/gpi/allocate/opid_list', boeng_views.opid_list),
     path('request/gpi/allocate/customer_id', alloc_views.customer_id),
     path('request/gpi/allocate/customer_id_edit', alloc_views.customer_id_edit),
     path('request/gpi/allocate/customerid', alloc_views.customerid),
