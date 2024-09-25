@@ -17,7 +17,7 @@ import smtplib
 from pathlib import Path
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from pymysql.converters import escape_string
 from django.conf import settings
 from utils import analyzer_db
@@ -26,6 +26,7 @@ import pandas as pd
 import numpy as np
 import allocate.utils as u
 import logging
+from request import settings as rs
 
 logger = logging.getLogger(__name__)
 #logging.basicConfig(filename='C:/reqLog/boengLog.txt', level=logging.DEBUG, format='%(asctime)s')
@@ -320,3 +321,38 @@ def opid_list(request):
     
     return HttpResponse(simplejson.dumps(res), content_type='application/json')
     pass
+
+def csv_upload(request):
+    res = {}
+    res['code'] = 20000
+    res['data'] = {}
+    logger.debug('csv_upload, start: {}, {}'.format(request.method, request.FILES.get('file')))
+    if request.method == 'POST' and request.FILES.get('file'):
+        upload_file = request.FILES['file']
+        save_path = os.path.join(rs.UPLOAD_ROOT, upload_file.name)
+        logger.debug(f'csv_upload, save_path = {save_path}')
+        with open(save_path, 'wb+') as destination:
+            for chunk in upload_file.chunks():
+                destination.write(chunk)
+
+    res['data']['status'] = 'File uploaded OK'
+    logger.debug(f'csv_upload, end: {res}')
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+    pass
+
+def download(request):
+    #logger.debug('download, request.body:', request.body.decode('utf-8'))
+    name = request.GET['file']
+    full_path = os.path.join(rs.UPLOAD_ROOT, name)
+    logger.debug(f'download, file name: {name}, full path: {full_path}')
+    if os.path.exists(full_path):
+        with open(full_path, 'rb') as fh:
+            content = "application/vnd.ms-excel"
+            if 'pdf' in name.lower():
+                content = "application/pdf"
+            res = HttpResponse(fh.read(), content_type=content)
+            res['Content-Disposition'] = 'inline; filename=' + name
+            return res
+    raise Http404
+    pass
+
