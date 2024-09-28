@@ -356,3 +356,33 @@ def download(request):
     raise Http404
     pass
 
+def fetch_customer(request):
+    res = {
+        'code': 20000,
+        'data': {
+            'items': [],
+        },
+    }
+    cus = dc('customerdb')
+    sql = "SELECT `Summary` FROM `jira_issues_cust` ORDER BY `Summary`"
+    logger.debug('fetch_customer', f'{sql}')
+    df = cus.read_query(sql)
+    l_customers = []
+    for i_index in df.index:
+        l_customers.append(df.at[i_index, 'Summary'])
+
+    local_sql = 'SELECT `Customer` FROM `tbl_local_customers` ORDER BY `Customer`'
+    logger.debug('fetch_customer', f'{local_sql}')
+    local_df = db.read_query(local_sql)
+    for i_index in local_df.index:
+        l_customer = local_df.at[i_index, 'Customer']
+        if l_customer not in l_customers:
+            l_customers.append(l_customer)
+    
+    for cus in l_customers:
+            res['data']['items'].append(
+                {
+                    'Customer': cus
+                }
+            )
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')

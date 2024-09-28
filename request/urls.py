@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from allocate import views as alloc_views
 from user import views as user_views
-from allocate import boeng as boeng_views
+from allocate import boeng as bv
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,17 +30,17 @@ urlpatterns = [
     path('request/gpi/allocate/customerid', alloc_views.customerid),
     path('request/gpi/allocate/customer_list', alloc_views.customer_list),
     path('request/gpi/allocate/customerlist', alloc_views.customerlist),
-    path('request/gpi/allocate/customer_list', alloc_views.customer_list),
     path('request/gpi/allocate/request_info', alloc_views.request_info),
     path('request/gpi/allocate/request_edit', alloc_views.request_edit),
-    path('request/gpi/allocate/new_boeng_info', boeng_views.new_boeng_info),
-    path('request/gpi/allocate/new_boeng_edit', boeng_views.new_boeng_edit),
-    path('request/gpi/allocate/fetch_boengrule', boeng_views.fetch_boengrule),
-    path('request/gpi/allocate/nwcc_list', boeng_views.nwcc_list),
-    path('request/gpi/allocate/opid_list', boeng_views.opid_list),
-    path('request/gpi/allocate/opid_list', boeng_views.opid_list),
-    path('request/gpi/allocate/csv_upload', boeng_views.csv_upload),
-    path('request/gpi/allocate/download', boeng_views.download),
+    path('request/gpi/allocate/fetch_customer', bv.fetch_customer),
+    path('request/gpi/allocate/new_boeng_info', bv.new_boeng_info),
+    path('request/gpi/allocate/new_boeng_edit', bv.new_boeng_edit),
+    path('request/gpi/allocate/fetch_boengrule', bv.fetch_boengrule),
+    path('request/gpi/allocate/nwcc_list', bv.nwcc_list),
+    path('request/gpi/allocate/opid_list', bv.opid_list),
+    path('request/gpi/allocate/opid_list', bv.opid_list),
+    path('request/gpi/allocate/csv_upload', bv.csv_upload),
+    path('request/gpi/allocate/download', bv.download),
     path('request/gpi/allocate/customer_id_edit', alloc_views.customer_id_edit),
     path('request/gpi/allocate/customerid', alloc_views.customerid),
     path('request/gpi/allocate/devicelist', alloc_views.devicelist),
