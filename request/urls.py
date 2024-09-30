@@ -41,6 +41,7 @@ urlpatterns = [
     path('request/gpi/allocate/opid_list', bv.opid_list),
     path('request/gpi/allocate/csv_upload', bv.csv_upload),
     path('request/gpi/allocate/download', bv.download),
+    path('request/gpi/allocate/new_customer_add', bv.new_customer_add),
     path('request/gpi/allocate/customer_id_edit', alloc_views.customer_id_edit),
     path('request/gpi/allocate/customerid', alloc_views.customerid),
     path('request/gpi/allocate/devicelist', alloc_views.devicelist),

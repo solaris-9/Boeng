@@ -22,6 +22,7 @@ from pymysql.converters import escape_string
 from django.conf import settings
 from utils import analyzer_db
 from utils import DatabaseConnector as dc
+from utils import Jira as Jira
 import pandas as pd
 import numpy as np
 import allocate.utils as u
@@ -277,11 +278,13 @@ def new_boeng_edit(request):
 
 
 def nwcc_list(request):
+    logger.debug('nwcc_list')
     cus = dc('customerdb')
     nwcc_fields = [
         'Customer',
         'OPID',
-        'Platform'
+        'Platform',
+        'TenantID'
     ]
     df = cus.read_query(
         'select {fields} from `cdb_issues_saas`'.format(
@@ -291,10 +294,12 @@ def nwcc_list(request):
         )
     )
 
-    res = {}
-    res['code'] = 20000
-    res['data'] = {}
-    res['data']['items'] = []
+    res = {
+        'code': 20000,
+        'data': {
+            'items': [],
+        },
+    }
     for i_index in df.index:
         item = {}
         for field in nwcc_fields:
@@ -385,4 +390,77 @@ def fetch_customer(request):
                     'Customer': cus
                 }
             )
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+
+tbl_local_customers_field = [
+    'Customer', 'Description', 'Source', 'AddedBy', 'AddedOn'
+]
+
+def handle_new_customer_add_jira(data, uname):
+    logger.debug(f'handle_new_customer_add: {data.__str__()}')
+    customer = data["Customer"]
+    desc = data["Description"]
+    #mail = data["AddedBy"]
+    logger.debug(f'handle_new_customer_add, {customer}')
+    jira = Jira()
+    param = {
+        "fields": {
+            "project": {"key": "BBDCUST"},
+            "summary": f"{customer}",
+            "description": f"{desc}",
+            "issuetype": {"id": "15401"},
+            "reporter": {"name": f"{uname}"}
+        }
+    }
+    logger.debug(f'handle_new_customer_add, param= {param.__str__()}')
+    rsp = jira.post_with_resp('rest/api/latest/issue', param)
+    if rsp.ok:
+        new_key = rsp.json()['key']
+        logger.debug(f'handle_new_customer_add, Created new key = {new_key}')
+        return new_key
+    else:
+        logger.debug(f'handle_new_customer_add failed: {rsp.json()}')
+        return None
+    pass
+
+def handle_new_customer_add(tbl, data, uname):
+    logger.debug('handle_new_customer_add ...', data)
+    rsp = handle_new_customer_add_jira(data, uname)
+    if rsp is None:
+        logger.debug('handle_new_customer_add failed!!!')
+        return 'New Customer Add failed'
+    l_fields = ','.join([f'`{f}`' for f in tbl_local_customers_field] + ['`Key`'])
+    l_values = ','.join([f'"{v}"' for v in [data[k] for k in tbl_local_customers_field]] + [f'"{rsp}"'])
+    sql = "insert into {tbl} ({fields}) values ({values})".format(
+        tbl=tbl,
+        fields=l_fields,
+        values=l_values
+    )
+    logger.debug('handle_new_customer_add', f'{sql}')
+    db.execute(sql)
+    return 'New Customer Add successful'
+    pass
+
+def new_customer_add(request):
+    res = {
+        'code': 20000,
+        'data': {
+            'items': [],
+        },
+    }
+
+    try:
+        if request.method == 'POST':
+            data = json.loads(request.body)
+            if data:
+                l_data = {}
+                for field in tbl_local_customers_field:
+                    l_data[field] = data.get(field)
+                uname = data.get('uname')
+    except Exception as e:
+        logger.debug(f'new_customer_add, Invalid Parameters: {e}')
+        res['data']['status'] = "Invalid Parameters"
+        return HttpResponse(simplejson.dumps(res), content_type='application/json')
+
+    res['data']['status'] = handle_new_customer_add('tbl_local_customers', l_data, uname)
     return HttpResponse(simplejson.dumps(res), content_type='application/json')

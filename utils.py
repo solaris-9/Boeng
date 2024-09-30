@@ -10,6 +10,10 @@ from urllib.parse import quote_plus
 import logging
 from request import settings as rs
 
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import urllib.parse
+
 class vue_response:
 
   def success(msg='', data={}):
@@ -336,4 +340,83 @@ class DatabaseConnector:
             logging.getLogger(__name__).debug('!!! ERROR: {}'.format(e))
         pass
     
-    
+
+
+class Jira:
+    session = None
+    u_auth = 'rest/auth/1/session'
+    server = None
+    def __init__(self, sever=None):
+        self.server = sever or 'https://jiradc2.ext.net.nokia.com/'
+        self._headers = {
+            "Content-Type": "application/json",
+            'Authorization': 'Bearer MDExNDAwMTUxMjg1OkwRsKNWe/tAXMvZG9zdQ9UX9jqf'
+        }
+        requests.packages.urllib3.disable_warnings(
+            InsecureRequestWarning
+            )
+        self.session = requests.Session()
+        pass
+
+    def get(self, url, params = None):
+        u = '{}{}'.format(self.server, url)
+        if params:
+            u += '?%s' % urllib.parse.urlencode(params) 
+        logging.debug('url = %s' % u)
+        resp = self.session.get(
+            url=u,
+            headers=self._headers,
+            verify=False
+        )
+        logging.debug('resp = %s' % resp.text)
+        return  resp
+
+    def post(self, url, data):
+        resp = self.session.post(
+            '{}{}'.format(self.server, url), 
+            data=json.dumps(data), 
+            headers=self._headers,
+            verify = False
+        )
+        return resp.ok
+        pass
+        
+    def post_with_resp(self, url, data):
+        resp = self.session.post(
+            '{}{}'.format(self.server, url), 
+            data=json.dumps(data), 
+            headers=self._headers,
+            verify = False
+        )
+        return resp
+        pass
+        
+    def put(self, url, data):
+        resp = self.session.put(
+            '{}{}'.format(self.server, url), 
+            data=data, 
+            headers=self._headers,
+            verify=False
+        )
+        return resp.ok
+        pass
+    def put_with_resp(self, url, data):
+        resp = self.session.put(
+            '{}{}'.format(self.server, url), 
+            data=json.dumps(data), 
+            headers=self._headers,
+            verify=False
+        )
+        return resp
+        pass
+
+    def delete(self, url):
+        resp = self.session.delete(
+            '{}{}'.format(self.server, url),
+            headers=self._headers
+        )
+        return resp
+        pass
+
+
+
