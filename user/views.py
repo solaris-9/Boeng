@@ -21,8 +21,12 @@ def ldap_auth(username, password):
        
     conn = ldap.initialize(LDAP_HOST)        
     conn.simple_bind_s('nsn-intra\\' + username, password)
-    result = conn.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, 'sAMAccountName=' + username)    
+    #conn.simple_bind_s(username, password)
+    result = conn.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, 'sAMAccountName=' + username)
+    #print('--> result:', conn.__dict__, file=fa, flush=True) 
+    #print('--> result:', result, file=fa, flush=True)
     result = result[0][1]
+    #print('--> result:', result, file=fa, flush=True)
     user_info = {
       'full_name': result['cn'][0].decode('utf-8'),
       'f_name': result['givenName'][0].decode('utf-8'),
@@ -31,7 +35,7 @@ def ldap_auth(username, password):
     return user_info
    
   except Exception as e:
-    print('--> ldap_auth Err:', e)
+    print('--> ldap_auth Err:', e, file=fa, flush=True)
     return False
 
 
@@ -70,11 +74,11 @@ def login(request):
         f_name = ldap_user['f_name'],
         l_name = ldap_user['l_name'],
         full_name = ldap_user['full_name'],
-        roles = 'viewer',
+        roles = 'Viewer',
         level = '1',
         exp_time = exp_time,
         login_time = sLastupdate)
-      roles = 'views'
+      roles = 'Viewer'
       level = '1'
         
     log1 = sql.search_log(key1=username,key2='',key3='Login',key4=sLastupdate,key5='login success') 
@@ -86,13 +90,22 @@ def login(request):
             accdate=sLastupdate,
             status ='login success'
             )
+    grade = sql.get_grades(roles)
+    print('grade = ', grade, file=fa, flush=True)
     sql.close()
     data = {
       'name': username,
       'mail': ldap_user['mail'],      
       'token': user['token'],      
       'roles': roles,
-      'level': level
+      'level': level,
+      'Add': grade['Add'],
+      'Edit': grade['Edit'],
+      'Delete': grade['Delete'],
+      'Search': grade['Search'],
+      'View': grade['View'],
+      'Export': grade['Export'],
+      'Download': grade['Download'],
     }
     resp = {
       'code': 20000,
