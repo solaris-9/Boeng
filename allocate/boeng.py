@@ -81,95 +81,105 @@ boengrule_fields = {
     'modifiedon': {'show': True, 'type': 'str'},
 }
 
-def fetch_boengrule(request):
+# def fetch_boengrule(request):
+#     try:
+#         sType = request.GET['type']
+#         b_id = request.GET['B_ID']
+#     except:
+#         return HttpResponse('Invalid Parameters', content_type='application/json')
+
+#     dResult = {}
+#     dResult['code'] = 20000
+#     dResult['data'] = {}
+#     dResult['data']['items'] = []
+
+#     #SQLConn = analyzer_db()
+#     # 0 select menu
+#     if sType == '0':
+#         #SQLCur = SQLConn.dcur
+#         sql = 'select {fields} from {tbl} where `B_ID` = "{b_id}" '.format(
+#             fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()]),
+#             tbl=tbl,
+#             b_id=b_id
+#         )
+#         logger.debug(f'fetch_boengrule, sql = {sql}')
+#         #SQLCur.execute(sql)
+#         #SQLResult = SQLCur.fetchall()
+#         #SQLConn.close()
+#         df = db.read_query(sql)
+#         for i_index in df.index:
+#             dItem = {}
+#             for field in boengrule_fields.keys():
+#                 if type(df.at[i_index, field]) == pd.Timestamp:
+#                     dItem[field] = str(df.at[i_index, field])
+#                 elif type(df.at[i_index, field]) == np.int64:
+#                     dItem[field] = int(df.at[i_index, field])
+#                 else:
+#                     dItem[field] = df.at[i_index, field]
+#             dResult['data']['items'].append(dItem)
+#         #logger.debug(dResult)
+#     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
+
+def new_boeng_fetch(request):
     try:
-        sType = request.GET['type']
-        b_id = request.GET['B_ID']
+        mail = request.GET['mail']
+        level = request.GET['level']
+        ttype = request.GET['type']
+        logger.debug(f'mail = {mail}, level = {level}, type = {ttype}')
+        if ttype == 'single':
+            b_id = request.GET['B_ID']
+            logger.debug(f'b_id = {b_id}')
     except:
         return HttpResponse('Invalid Parameters', content_type='application/json')
 
-    dResult = {}
-    dResult['code'] = 20000
-    dResult['data'] = {}
-    dResult['data']['items'] = []
+    res = {
+        'code': 20000,
+        'data': {
+            'items': [],
+        },
+    }
 
-    #SQLConn = analyzer_db()
-    # 0 select menu
-    if sType == '0':
-        #SQLCur = SQLConn.dcur
-        sql = 'select {fields} from {tbl} where `B_ID` = "{b_id}" '.format(
-            fields=','.join(['`{field}`'.format(field=f) for f in boengrule_fields.keys()]),
-            tbl=tbl,
-            b_id=b_id
-        )
-        logger.debug(f'fetch_boengrule, sql = {sql}')
-        #SQLCur.execute(sql)
-        #SQLResult = SQLCur.fetchall()
-        #SQLConn.close()
-        df = db.read_query(sql)
-        for i_index in df.index:
-            dItem = {}
-            for field in boengrule_fields.keys():
-                if type(df.at[i_index, field]) == pd.Timestamp:
-                    dItem[field] = str(df.at[i_index, field])
-                elif type(df.at[i_index, field]) == np.int64:
-                    dItem[field] = int(df.at[i_index, field])
-                else:
-                    dItem[field] = df.at[i_index, field]
-            dResult['data']['items'].append(dItem)
-        #logger.debug(dResult)
-    return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
-
-def new_boeng_info(request):
-    try:
-        sMail = request.GET['mail']
-        sLevel = request.GET['level']
-    except:
-        return HttpResponse('Invalid Parameters', content_type='application/json')
-
-    dResult = {}
-    dResult['code'] = 20000
-    dResult['data'] = {}
-    dResult['data']['items'] = []
-
-    if sLevel != 'undefined':
-        cmd = 'SELECT {fields} FROM {tbl} ORDER BY `Customer`'.format(
+    if level != 'undefined':
+        cmd = 'SELECT {fields} FROM {tbl} '.format(
             fields=','.join(
                 ['`{field}`'.format(field=f) for f in boengrule_fields.keys()]
             ),
             tbl=tbl
         )
-        # if sLevel < '5':
-        #     sRule = """WHERE Creator='%s' or Modifier='%s' """ % (sMail, sMail)
-        # else:
-        #     sRule = ''
 
+        if ttype == 'all':
+            cmd = f'{cmd} ORDER BY `Customer`'
+        elif ttype == 'single':
+            cmd = f'{cmd} WHERE `B_ID` = "{b_id}" '
 
         logger.debug(f'new_boeng_info, sql = {cmd}')
 
-        df = db.read_table(tbl)
+        df = db.read_query(cmd)
         df = df.replace({np.nan: None}).fillna('')
         for i_index in df.index:
-            dItem = {}
+            item = {}
             for field in boengrule_fields.keys():
                 if field in ['root_beacon_model']:
-                    beacons = df.at[i_index, field].split('###')
-                    for i in range(len(beacons)):
-                        dItem['root_beacon_extender_{}'.format(i+1)] = beacons[i]
+                    if ttype == 'all':
+                        beacons = df.at[i_index, field].split('###')
+                        for i in range(len(beacons)):
+                            item['root_beacon_extender_{}'.format(i+1)] = beacons[i]
+                    else:
+                        item[field] = str(df.at[i_index, field])
                 else:
                     match boengrule_fields[field]['type']:
                         case 'str':
-                            dItem[field] = str(df.at[i_index, field])
+                            item[field] = str(df.at[i_index, field])
                         case 'bool':
                             if field in ['separate_license', 'used_as_extender']:
-                                dItem[field] = "Yes" if df.at[i_index, field] else "No"
+                                item[field] = "Yes" if df.at[i_index, field] else "No"
                             else:
-                                dItem[field] = "True" if df.at[i_index, field] else "False"
+                                item[field] = "True" if df.at[i_index, field] else "False"
             
-            dResult['data']['items'].append(dItem)
+            res['data']['items'].append(item)
     #logger.debug(dResult)
 
-    return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
     pass
 
 def handle_boeng_rule_edit(tbl, data):
@@ -228,53 +238,55 @@ def handle_boeng_rule_add(tbl, data):
 
 def new_boeng_edit(request):
     logger.debug('new_boeng_edit, request.body:', request.body.decode('utf-8'))
-    dResult = {}
-    dResult['code'] = 20000
-    dResult['data'] = {}
-    dResult['data']['status'] = []
+    res = {
+        'code': 20000,
+        'data': {
+            'items': [],
+        },
+    }
 
     try:
-        sType = ''
+        ttype = ''
         sLastupdate = datetime.today().strftime('%Y-%m-%d')
         if request.method == 'POST':
             data = json.loads(request.body)
             if data:
-                sType = data.get('type')
-                sMail = data.get('mail')
+                ttype = data.get('type')
+                mail = data.get('mail')
 
-                if sType[:1] == '1' or sType == '2':
+                if ttype in ['add', 'edit']:
                     l_data = {}
                     for field in [f for f in boengrule_fields.keys() if f != 'B_ID']:
                         l_data[field] = data.get(field)
-                if sType == '2':
+                if ttype == 'edit':
                     l_data['B_ID'] = data.get('B_ID')
-                elif sType == '3':
+                elif ttype == 'delete':
                     l_delete_list = data.get('deletelist')
 
     except Exception as e:
         logger.debug(f'new_boeng_edit, Invalid Parameters: {e}')
-        dResult['data']['status'] = "Invalid Parameters"
-        return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
+        res['data']['status'] = "Invalid Parameters"
+        return HttpResponse(simplejson.dumps(res), content_type='application/json')
 
     # 1x add
-    if sType[:1] == '1':
+    if ttype == 'add':
         rt = handle_boeng_rule_add(tbl, l_data)
-        dResult['data']['status'] = rt
+        res['data']['status'] = rt
             
     # 2 edit
-    elif sType == '2':
+    elif ttype == 'edit':
         handle_boeng_rule_edit(tbl, l_data)
-        dResult['data']['status'] = "Edit successful"
+        res['data']['status'] = "Edit successful"
         pass
 
     # 3 delete
-    elif sType == '3':
+    elif ttype == 'delete':
         handle_boeng_rule_delete(tbl, l_delete_list)
         pass
-        dResult['data']['status'] = "Delete successful"
+        res['data']['status'] = "Delete successful"
 
 
-    return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
 
 
 def nwcc_list(request):

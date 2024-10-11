@@ -263,6 +263,12 @@ class analyzer_db:
       print('--> analyzer_db insert_log err:', e)
       return False
 
+  def get_grades(self, role):
+      sql = f'select * from auth_grade where `Grade` = "{role}"'
+      self.dcur.execute(sql)
+      return self.dcur.fetchall()[0]
+      pass
+
 
 def create_token(key, expire=7200):
     
@@ -292,7 +298,6 @@ def verify_token(key, token):
     return False
   # token certification success
   return True
-
 
 
 class DatabaseConnector:

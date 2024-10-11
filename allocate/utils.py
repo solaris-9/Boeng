@@ -78,11 +78,14 @@ def gen_tbl_index(tbl, id, db):
     df = db.read_query(sql)      
     logging.getLogger(__name__).debug(df)
     if len(df.index) > 0 :
-        m = re.search(r'(\d+)', df.at[0, 'mm'])
-        if m:
-            res = int(m.group(1))
-        else:
+        if df.at[0, 'mm'] is None:
             res = 0
+        else:
+            m = re.search(r'(\d+)', df.at[0, 'mm'])
+            if m:
+                res = int(m.group(1))
+            else:
+                res = 0
     else:
         res = 0
     return res
