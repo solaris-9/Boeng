@@ -171,10 +171,16 @@ def new_boeng_fetch(request):
                         case 'str':
                             item[field] = str(df.at[i_index, field])
                         case 'bool':
-                            if field in ['separate_license', 'used_as_extender']:
-                                item[field] = "Yes" if df.at[i_index, field] else "No"
+                            if ttype == 'all':
+                                if field in ['separate_license', 'used_as_extender']:
+                                    item[field] = "Yes" if df.at[i_index, field] else "No"
+                                else:
+                                    item[field] = "True" if df.at[i_index, field] else "False"
                             else:
-                                item[field] = "True" if df.at[i_index, field] else "False"
+                                if type(df.at[i_index, field]) == np.int64:
+                                    item[field] = int(df.at[i_index, field])
+                                else:
+                                    item[field] = df.at[i_index, field]
             
             res['data']['items'].append(item)
     #logger.debug(dResult)
