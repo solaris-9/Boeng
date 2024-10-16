@@ -29,10 +29,11 @@ import allocate.utils as u
 import logging
 from request import settings as rs
 
-logger = logging.getLogger(__name__)
-#logging.basicConfig(filename='C:/reqLog/boengLog.txt', level=logging.DEBUG, format='%(asctime)s')
+app = 'boeng'
+
+logger = logging.getLogger(app)
 logging.basicConfig(
-    filename='C:/reqLog/boengLog.txt', 
+    filename=f'C:/reqLog/{app}Log.txt', 
     level=logging.DEBUG,
     format="{asctime}::{message}",
     style="{",
