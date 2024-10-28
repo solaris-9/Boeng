@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from allocate import views as alloc_views
 from user import views as user_views
-from allocate import boeng, grade, common
+from allocate import boeng, grade, common, devicedp
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -44,11 +44,15 @@ urlpatterns = [
     path('request/gpi/allocate/nwcc_list', common.nwcc_list),
     path('request/gpi/allocate/opid_list', common.opid_list),
     path('request/gpi/allocate/opid_list', common.opid_list),
-    path('request/gpi/allocate/csv_upload', common.csv_upload),
-    path('request/gpi/allocate/download', common.download),
+    path('request/gpi/allocate/file_upload', common.file_upload),
+    path('request/gpi/allocate/file_download', common.file_download),
     path('request/gpi/allocate/new_customer_add', common.new_customer_add),
     path('request/gpi/allocate/device_list', common.device_list),
 
-    path('request/gpi/allocate/new_boeng_fetch', boeng.new_boeng_fetch),
-    path('request/gpi/allocate/new_boeng_edit', boeng.new_boeng_edit),
+    path('request/gpi/allocate/boeng_list', boeng.boeng_list),
+    path('request/gpi/allocate/boeng_edit', boeng.boeng_edit),
+
+    path('request/gpi/allocate/devicedp_list', devicedp.devicedp_list),
+    path('request/gpi/allocate/devicedp_edit', devicedp.devicedp_edit),
+
 ]

@@ -121,7 +121,7 @@ boengrule_fields = {
 #         #logger.debug(dResult)
 #     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
-def new_boeng_fetch(request):
+def boeng_list(request):
     try:
         mail = request.GET['mail']
         level = request.GET['level']
@@ -243,7 +243,7 @@ def handle_boeng_rule_add(tbl, data):
     return rt
     pass
 
-def new_boeng_edit(request):
+def boeng_edit(request):
     logger.debug('new_boeng_edit, request.body:', request.body.decode('utf-8'))
     res = {
         'code': 20000,
@@ -346,39 +346,6 @@ def opid_list(request):
     return HttpResponse(simplejson.dumps(res), content_type='application/json')
     pass
 
-def csv_upload(request):
-    res = {}
-    res['code'] = 20000
-    res['data'] = {}
-    logger.debug('csv_upload, start: {}, {}'.format(request.method, request.FILES.get('file')))
-    if request.method == 'POST' and request.FILES.get('file'):
-        upload_file = request.FILES['file']
-        save_path = os.path.join(rs.UPLOAD_ROOT, upload_file.name)
-        logger.debug(f'csv_upload, save_path = {save_path}')
-        with open(save_path, 'wb+') as destination:
-            for chunk in upload_file.chunks():
-                destination.write(chunk)
-
-    res['data']['status'] = 'File uploaded OK'
-    logger.debug(f'csv_upload, end: {res}')
-    return HttpResponse(simplejson.dumps(res), content_type='application/json')
-    pass
-
-def download(request):
-    #logger.debug('download, request.body:', request.body.decode('utf-8'))
-    name = request.GET['file']
-    full_path = os.path.join(rs.UPLOAD_ROOT, name)
-    logger.debug(f'download, file name: {name}, full path: {full_path}')
-    if os.path.exists(full_path):
-        with open(full_path, 'rb') as fh:
-            content = "application/vnd.ms-excel"
-            if 'pdf' in name.lower():
-                content = "application/pdf"
-            res = HttpResponse(fh.read(), content_type=content)
-            res['Content-Disposition'] = 'inline; filename=' + name
-            return res
-    raise Http404
-    pass
 
 def fetch_customer(request):
     res = {
