@@ -46,6 +46,10 @@ tbl = 'tbl_devicedp'
 devicedp_fields = {
 	'ID': {'type': 'str'},
 	'field_customer': {'type': 'str'},
+    'field_status': {'type': 'str'},
+    'field_assignee': {'type': 'str'},
+    'field_mail': {'type': 'str'},
+    'field_jira_id': {'type': 'str'},
     'field_root_device': {'type': 'str'},
     'field_product_variant': {'type': 'str'},
     'field_managed_by_hc': {'type': 'str'},
