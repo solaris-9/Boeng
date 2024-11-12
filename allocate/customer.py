@@ -49,10 +49,10 @@ customer_fields = {
     'field_description': {'col': 'Description', 'jira': 'description', 'update': 'text'},
     'field_customer_olcs': {'col': 'CustomerReference', 'jira': 'customfield_51694', 'update': 'text'},
     'field_customer_impact': {'col': 'CustomerImpact', 'jira': 'customfield_46695', 'update': 'text'},
-    'field_ont_plm': {'col': 'PLMPrime', 'jira': 'customfield_18893', 'update': 'none'},
-    'field_nwf_plm': {'col': 'PLMContact', 'jira': 'customfield_37445', 'update': 'none'},
-    'field_fwa_plm': {'col': 'ProductManager', 'jira': 'customfield_37783', 'update': 'none'},
-    'field_local_contact': {'col': 'ContactPerson', 'jira': 'customfield_38490', 'update': 'none'},
+    'field_ont_plm': {'col': 'PLMPrime', 'jira': 'customfield_18893', 'update': 'name'},
+    'field_nwf_plm': {'col': 'PLMContact', 'jira': 'customfield_37445', 'update': 'name'},
+    'field_fwa_plm': {'col': 'ProductManager', 'jira': 'customfield_37783', 'update': 'name'},
+    'field_local_contact': {'col': 'ContactPerson', 'jira': 'customfield_38490', 'update': 'name'},
 }
 
 
@@ -103,6 +103,13 @@ def customer_list(request):
 
 def handle_customer_edit(tbl, data):
     ### To save to Jira
+    ### fetch user info
+    d_cus = dc('customerdb')
+    df = d_cus.read_table('file_issues_engineer')
+    mail_map = {}
+    for i_index in df.index:
+        mail_map[df.at[i_index, 'Email'].strip().lower()] = df.at[i_index, 'CSL'].strip()
+
     #JSON = {"update":{"customfield_37499":[{"set":"fwajira, 23/Oct/24 12:14 PM"}],"customfield_28692":[{"set":"1234"}]}}
     param = {
         'update': {}
@@ -113,8 +120,12 @@ def handle_customer_edit(tbl, data):
         elif customer_fields[l_key]['update'] == 'text':
             param["update"][customer_fields[l_key]['jira']] = [{"set": "{}".format(data[l_key])}]
         elif customer_fields[l_key]['update'] == 'name':
-            param["update"][customer_fields[l_key]['jira']] = [{"set": {"emailAddress": "{}".format(data[l_key])}}]
-        
+            l_mail = data[l_key].strip().lower()
+            if l_mail in mail_map.keys():
+                l_name = mail_map[l_mail]
+                param["update"][customer_fields[l_key]['jira']] = [{"set": {"name": f"{l_name}"}}]
+            else:
+                continue
 
     logger.debug(param)
     jira = Jira()
