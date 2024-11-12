@@ -323,6 +323,13 @@ class DatabaseConnector:
                 rs.BC_DB['host'],
                 rs.BC_DB['port']
             )
+        elif db == 'bbddb':
+            self._cs = 'mysql+pymysql://{}:{}@{}:{}/'.format(
+                rs.BBD_DB['username'],
+                quote_plus(rs.BBD_DB['password']),
+                rs.BBD_DB['host'],
+                rs.BBD_DB['port']
+            )
 
         print(self._cs)
         self.metadata = MetaData()
@@ -355,7 +362,8 @@ class Jira:
         self.server = sever or 'https://jiradc2.ext.net.nokia.com/'
         self._headers = {
             "Content-Type": "application/json",
-            'Authorization': 'Bearer MDExNDAwMTUxMjg1OkwRsKNWe/tAXMvZG9zdQ9UX9jqf'
+            #'Authorization': 'Bearer MDExNDAwMTUxMjg1OkwRsKNWe/tAXMvZG9zdQ9UX9jqf'
+            'Authorization': 'Bearer NTkyMDExMzMyMzc4Ou3dyXx4r4uEJYLPEXtf0DpeQY8J'
         }
         requests.packages.urllib3.disable_warnings(
             InsecureRequestWarning

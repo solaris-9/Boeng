@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from allocate import views as alloc_views
 from user import views as user_views
-from allocate import boeng, grade, common, devicedp
+from allocate import boeng, grade, common, devicedp, customer
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +30,9 @@ urlpatterns = [
 
     path('request/gpi/allocate/grade_fetch', grade.grade_fetch),
     path('request/gpi/allocate/grade_edit', grade.grade_edit),
+
+    path('request/gpi/allocate/jira_customer_list', customer.customer_list),
+    path('request/gpi/allocate/jira_customer_edit', customer.customer_edit),
 
     # path('request/gpi/allocate/customerid', alloc_views.customerid),
     # path('request/gpi/allocate/customer_list', alloc_views.customer_list),
