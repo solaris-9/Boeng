@@ -52,7 +52,7 @@ customer_fields = {
     'field_ont_plm': {'col': 'PLMPrime', 'jira': 'customfield_18893', 'update': 'name'},
     'field_nwf_plm': {'col': 'PLMContact', 'jira': 'customfield_37445', 'update': 'name'},
     'field_fwa_plm': {'col': 'ProductManager', 'jira': 'customfield_37783', 'update': 'name'},
-    'field_local_contact': {'col': 'ContactPerson', 'jira': 'customfield_38490', 'update': 'name'},
+    'field_local_contact': {'col': 'CustomerAccountManager', 'jira': 'customfield_38490', 'update': 'name'},
 }
 
 
