@@ -171,7 +171,7 @@ def handle_devicedp_add(tbl, data):
     # logger.debug(f'handle_boeng_rule_add, count = {count}')
     # # to add
     # if count == 0 or l_data['Customer'] == '':
-    l_data['ID'] = u.strNum(u.gen_tbl_index(tbl, 'ID', db), 'D', 10)
+    l_data['ID'] = u.strNum(u.gen_tbl_index(tbl, 'ID', db), 'DEVICEDP-', 10)
 
     generated_str = u.generate_insert_sql(devicedp_fields, l_data, skip=['modifier', 'modifiedon'])
 

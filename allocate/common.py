@@ -136,27 +136,28 @@ def customer_list(request):
         },
     }
     cus = dc('customerdb')
-    sql = "SELECT `Summary` FROM `jira_issues_cust` ORDER BY `Summary`"
+    sql = "SELECT `Summary` as customer, `Key` as id FROM `jira_issues_cust`"
     logger.debug('fetch_customer', f'{sql}')
     df = cus.read_query(sql)
-    l_customers = []
+    l_customers = {}
     for i_index in df.index:
-        l_customers.append(df.at[i_index, 'Summary'])
+        #l_customers.append({'customer': df.at[i_index, 'customer'], 'key': df.at[i_index, 'key']})
+        l_customers[df.at[i_index, 'customer']] = df.at[i_index, 'id']
 
-    local_sql = 'SELECT `Customer` FROM `tbl_local_customers` ORDER BY `Customer`'
+    local_sql = 'SELECT `Customer` as customer, `Key` as id FROM `tbl_local_customers`'
     logger.debug('fetch_customer', f'{local_sql}')
     local_df = db.read_query(local_sql)
     for i_index in local_df.index:
-        l_customer = local_df.at[i_index, 'Customer']
-        if l_customer not in l_customers:
-            l_customers.append(l_customer)
+        l_cus = local_df.at[i_index, 'customer']
+        if l_cus not in l_customers.keys():
+            #l_customers.append({'customer': l_customer, 'key': local_df.at[i_index, 'key']})
+            l_customers[l_cus] = local_df.at[i_index, 'id']
     
-    for cus in l_customers:
-            res['data']['items'].append(
-                {
-                    'Customer': cus
-                }
-            )
+    for cus in l_customers.keys():
+            res['data']['items'].append({
+                'customer': cus,
+                'key': l_customers[cus]
+            })
     return HttpResponse(simplejson.dumps(res), content_type='application/json')
 
 tbl_local_customers_field = [
