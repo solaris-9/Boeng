@@ -51,7 +51,8 @@ def nwcc_list(request):
         'Customer',
         'OPID',
         'Platform',
-        'TenantID'
+        'TenantID',
+        'HDM'
     ]
     df = cus.read_query(
         'select {fields} from `cdb_issues_saas`'.format(
@@ -161,7 +162,7 @@ def customer_list(request):
     return HttpResponse(simplejson.dumps(res), content_type='application/json')
 
 tbl_local_customers_field = [
-    'Customer', 'Description', 'Source', 'AddedBy', 'AddedOn'
+    'Customer', 'Description', 'Id', 'ONT','NWF','FWA','Local','Source', 'AddedBy', 'AddedOn'
 ]
 
 def handle_new_customer_add_jira(data, uname):
@@ -171,13 +172,40 @@ def handle_new_customer_add_jira(data, uname):
     #mail = data["AddedBy"]
     logger.debug(f'handle_new_customer_add, {customer}')
     jira = Jira()
+
+    # email -> uname mapping
+    d_cus = dc('customerdb')
+    df = d_cus.read_table('file_issues_engineer')
+    mail_map = {}
+    for i_index in df.index:
+        mail_map[df.at[i_index, 'Email'].strip().lower()] = df.at[i_index, 'CSL'].strip()
+
+    ont = ""
+    logger.debug(f'{data['ONT'].strip().lower()}')
+    if data['ONT'].strip().lower() in mail_map.keys():
+        logger.debug(f'{data['ONT'].strip().lower()} in mail_map.keys')
+        ont = mail_map[data['ONT'].strip().lower()]
+    ont = ""
+    if data['NWF'].strip().lower() in mail_map.keys():
+        nwf = mail_map[data['NWF'].strip().lower()]
+    ont = ""
+    if data['FWA'].strip().lower() in mail_map.keys():
+        fwa = mail_map[data['FWA'].strip().lower()]
+    ont = ""
+    if data['Local'].strip().lower() in mail_map.keys():
+        local = mail_map[data['Local'].strip().lower()]
     param = {
         "fields": {
             "project": {"key": "BBDCUST"},
             "summary": f"{customer}",
             "description": f"{desc}",
             "issuetype": {"id": "15401"},
-            "reporter": {"name": f"{uname}"}
+            "reporter": {"name": f"{uname}"},
+            "customfield_14555": f"{data['Id']}",
+            "customfield_18893": {"name": f"{ont}"},
+            "customfield_37445": {"name": f"{nwf}"},
+            "customfield_37783": {"name": f"{fwa}"},
+            "customfield_38490": {"name": f"{local}"},
         }
     }
     logger.debug(f'handle_new_customer_add, param= {param.__str__()}')
@@ -192,7 +220,7 @@ def handle_new_customer_add_jira(data, uname):
     pass
 
 def handle_new_customer_add(tbl, data, uname):
-    logger.debug('handle_new_customer_add ...', data)
+    logger.debug(data)
     rsp = handle_new_customer_add_jira(data, uname)
     if rsp is None:
         logger.debug('handle_new_customer_add failed!!!')
@@ -204,7 +232,7 @@ def handle_new_customer_add(tbl, data, uname):
         fields=l_fields,
         values=l_values
     )
-    logger.debug('handle_new_customer_add', f'{sql}')
+    logger.debug(f'handle_new_customer_add: sql')
     db.execute(sql)
     return 'New Customer Add successful'
     pass
