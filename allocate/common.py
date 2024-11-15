@@ -181,9 +181,9 @@ def handle_new_customer_add_jira(data, uname):
         mail_map[df.at[i_index, 'Email'].strip().lower()] = df.at[i_index, 'CSL'].strip()
 
     ont = ""
-    logger.debug(f'{data['ONT'].strip().lower()}')
+    logger.debug(f'{data["ONT"].strip().lower()}')
     if data['ONT'].strip().lower() in mail_map.keys():
-        logger.debug(f'{data['ONT'].strip().lower()} in mail_map.keys')
+        logger.debug(f'{data["ONT"].strip().lower()} in mail_map.keys')
         ont = mail_map[data['ONT'].strip().lower()]
     ont = ""
     if data['NWF'].strip().lower() in mail_map.keys():
