@@ -23,6 +23,7 @@ from django.conf import settings
 from utils import analyzer_db
 from utils import DatabaseConnector as dc
 from utils import Jira as Jira
+from utils import mail
 import pandas as pd
 import numpy as np
 import allocate.utils as u
@@ -147,15 +148,48 @@ def handle_devicedp_edit(tbl, data):
     logger.debug(f'handle_devicedp_edit, sql = {sql}')
     db.execute(sql)
 
+    # sending email
+    tto = []
+    if 'modifier' in data.keys() and data['modifier'] is not None:
+        tto.append(data['modifier'])
+    if 'creator' in data.keys() and data['creator'] is not None:
+        tto.append(data['creator'])
+    if 'field_assignee' in data.keys() and data['field_assignee'] is not None and len(data['field_assignee']) > 0:
+        tto.append(data['field_assignee'])
+
+    logging.debug(f'tto = {tto}')
+
+    subject = f'{data['ID']}: updated'
+    body = f"""
+    ID: {data['ID']}
+    Modifier: {data['modifier']}
+    Status: {data['field_status']}
+    Assignee: {data['field_assignee']}
+    """
+    mail(tto, subject, body)
     pass
 
-def handle_devicedp_delete(tbl, llist):
+def handle_devicedp_delete(tbl, llist, mmail):
     sql = 'delete from {tbl} where `ID` in ({B_LIST})'.format(
         tbl=tbl,
         B_LIST=u.generate_delete_sql(llist)
     )
     logger.debug(f'handle_devicedp_delete, sql = {sql}')
     db.execute(sql)
+
+    # sending email
+    tto = [mmail]
+    logging.debug(f'tto = {tto}')
+
+    subject = f'{llist}: deleted'
+    body = f"""
+    Tickets deleted: {llist}
+    Deleted by: {mmail}
+    """
+    logging.debug(f'subject = {subject}')
+    logging.debug(f'boday = {body}')
+
+    mail(tto, subject, body)
 
     pass
 
@@ -186,6 +220,24 @@ def handle_devicedp_add(tbl, data):
     rt =  'Add successful, back and refresh page to show it'
     # else:
     #     rt = "The customer has already been added, unabled to be added again!"
+
+    # sending email
+    tto = []
+    if 'creator' in data.keys() and data['creator'] is not None:
+        tto.append(data['creator'])
+    if 'field_assignee' in data.keys() and data['field_assignee'] is not None and len(data['field_assignee']) > 0:
+        tto.append(data['field_assignee'])
+
+    logging.debug(f'tto = {tto}')
+
+    subject = f'{data['ID']}: created'
+    body = f"""
+    ID: {data['ID']}
+    Creator: {data['creator']}
+    Status: {data['field_status']}
+    Assignee: {data['field_assignee']}
+    """
+    mail(tto, subject, body)
 
     return rt
     pass
@@ -235,7 +287,7 @@ def devicedp_edit(request):
 
     # 3 delete
     elif ttype == 'delete':
-        handle_devicedp_delete(tbl, l_delete_list)
+        handle_devicedp_delete(tbl, l_delete_list, mail)
         pass
         res['data']['status'] = "Delete successful"
 

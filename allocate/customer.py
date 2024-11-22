@@ -46,6 +46,7 @@ tbl = 'jira_issues_cust'
 customer_fields = {
 	'field_jira_id': {'col': 'Key', 'jira': 'key', 'update': 'none'},
 	'field_customer_name': {'col': 'Summary', 'jira': 'summary', 'update': 'text'},
+    'field_customer_id': {'col': 'CustomerReferenceNumber', 'jira': 'customerfield_14555', 'update': 'text'},
     'field_description': {'col': 'Description', 'jira': 'description', 'update': 'text'},
     'field_customer_olcs': {'col': 'CustomerReference', 'jira': 'customfield_51694', 'update': 'text'},
     'field_customer_impact': {'col': 'CustomerImpact', 'jira': 'customfield_46695', 'update': 'text'},
