@@ -159,7 +159,7 @@ def handle_devicedp_edit(tbl, data):
 
     logging.debug(f'tto = {tto}')
 
-    subject = f'{data['ID']}: updated'
+    subject = f"{data['ID']}: updated"
     body = f"""
     ID: {data['ID']}
     Modifier: {data['modifier']}
@@ -230,7 +230,7 @@ def handle_devicedp_add(tbl, data):
 
     logging.debug(f'tto = {tto}')
 
-    subject = f'{data['ID']}: created'
+    subject = f"{data['ID']}: created"
     body = f"""
     ID: {data['ID']}
     Creator: {data['creator']}
