@@ -58,4 +58,6 @@ urlpatterns = [
     path('request/gpi/allocate/devicedp_list', devicedp.devicedp_list),
     path('request/gpi/allocate/devicedp_edit', devicedp.devicedp_edit),
 
+    path('request/gpi/nwcc/', include('nwcc.urls')),
+
 ]
