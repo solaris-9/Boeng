@@ -91,6 +91,7 @@ class analyzer_db:
             (%s, %s, %s, %s, %s, %s, %s, %s)
           ;
           """
+    logging.debug(f'sql = {cmd}')
     if 'f_name' in other_info:
       _f_name = other_info['f_name']
     else:
@@ -123,14 +124,15 @@ class analyzer_db:
       values = (username, _f_name, _l_name, _full_name, mail, _roles, _level,_login_time)
       self.cur.execute(cmd, values)
       _id = self.conn.insert_id()
+      logging.debug(f'_id = {_id}')
       cmd = """
             INSERT INTO
-              auth_token (Id, Token, ExpireTime)
+              auth_token (Token, ExpireTime)
             VALUES
-              (%s, %s, %s)
+              (%s, %s)
             ;
             """
-      values = (_id, token, _exp_time)
+      values = (token, _exp_time)
       self.cur.execute(cmd, values)
       self.conn.commit()
       user_info = {
@@ -147,6 +149,7 @@ class analyzer_db:
     except Exception as e:
       self.conn.rollback()
       print('--> analyzer_db insert_user err:', e)
+      logging.debug(e)
       return False
 
   def update_user(self, Id, full_name, f_name, l_name, mail, token, exp_time,login_time):

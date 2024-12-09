@@ -27,6 +27,7 @@ urlpatterns = [
     path('request/gpi/user/logout', user_views.logout),
     path('request/gpi/user/user_manage', user_views.user_manage),
     path('request/gpi/user/user_edit', user_views.user_edit),
+    path('request/gpi/user/role_list', user_views.role_list),
 
     path('request/gpi/allocate/grade_fetch', grade.grade_fetch),
     path('request/gpi/allocate/grade_edit', grade.grade_edit),

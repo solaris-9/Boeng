@@ -5,11 +5,14 @@ import datetime
 import simplejson
 import json
 import ldap
-# import os
+import logging
+import numpy as np
 
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from utils import analyzer_db, create_token
+from utils import DatabaseConnector as dc
+
 File_address = r'C:/reqLog/printlog.txt'
 fa = open(File_address,'a')
 # LDAP_HOST = 'ldap://10.152.138.3:389' 
@@ -276,6 +279,7 @@ def user_edit(request):
             level = sLevel,
             exp_time = exp_time,
             login_time = sLastupdate)
+          logging.debug(f'user = {user}')
           Result = 'Add user successful' 
         sql.close()   
     # 2 edit
@@ -293,4 +297,30 @@ def user_edit(request):
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
 
+def role_list(request):
+    try:
+        ttype = request.GET['type']
+        logging.debug(f'type = {ttype}')
+    except:
+        return HttpResponse('Invalid Parameters', content_type='application/json')
 
+    res = {
+        'code': 20000,
+        'data': {
+            'items': [],
+        },
+    }
+    db = dc('requestdb')
+    cmd = 'SELECT distinct `Grade` FROM `auth_grade` '
+    logging.debug(f'devicedp_list, sql = {cmd}')
+
+    df = db.read_query(cmd)
+    df = df.replace({np.nan: None}).fillna('')
+    for i_index in df.index:
+        item = {}
+        item['Grade'] = str(df.at[i_index, 'Grade'])
+    
+        res['data']['items'].append(item)
+
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+    pass
