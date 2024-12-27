@@ -61,4 +61,6 @@ urlpatterns = [
 
     path('request/gpi/nwcc/', include('nwcc.urls')),
 
+    path('request/gpi/platform/', include('cplatform.urls')),
+
 ]
