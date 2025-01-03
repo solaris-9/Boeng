@@ -44,18 +44,48 @@ logging.basicConfig(
 db = dc('requestdb')
 
 
+# def nwcc_list(request):
+#     logger.debug('nwcc_list')
+#     cus = dc('customerdb')
+#     nwcc_fields = [
+#         'Customer',
+#         'OPID',
+#         'Platform',
+#         'TenantID',
+#         'HDM'
+#     ]
+#     df = cus.read_query(
+#         'select {fields} from `cdb_issues_saas`'.format(
+#             fields=','.join(
+#                 [f'`{field}`' for field in nwcc_fields]
+#             )
+#         )
+#     )
+
+#     res = {
+#         'code': 20000,
+#         'data': {
+#             'items': [],
+#         },
+#     }
+#     for i_index in df.index:
+#         item = {}
+#         for field in nwcc_fields:
+#             item[field] = df.at[i_index, field]
+#         res['data']['items'].append(item)
+    
+#     return HttpResponse(simplejson.dumps(res), content_type='application/json')
+#     pass
 def nwcc_list(request):
     logger.debug('nwcc_list')
-    cus = dc('customerdb')
+    # cus = dc('customerdb')
     nwcc_fields = [
-        'Customer',
-        'OPID',
-        'Platform',
-        'TenantID',
-        'HDM'
+        'ID',
+        'field_customer',
+        'field_status'
     ]
-    df = cus.read_query(
-        'select {fields} from `cdb_issues_saas`'.format(
+    df = db.read_query(
+        'select {fields} from `tbl_nwcc`'.format(
             fields=','.join(
                 [f'`{field}`' for field in nwcc_fields]
             )
@@ -76,7 +106,6 @@ def nwcc_list(request):
     
     return HttpResponse(simplejson.dumps(res), content_type='application/json')
     pass
-
 def opid_list(request):
     cus = dc('customerdb')
     sql = "select distinct `OPID` from `cdb_issues_preconfig` where `BusinessLine` = 'BBD-NWF' order by `OPID` ASC"
