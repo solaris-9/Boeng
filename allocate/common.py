@@ -315,11 +315,13 @@ def device_list(request):
 
     cus = dc('customerdb')
     sql = """
-        SELECT `Product`, left(`KitCode`, 10) AS Code, `Businessline` AS Bizline 
+        SELECT `Product`, LEFT(`KitCode`, 10) AS Code, `Businessline` AS Bizline 
         FROM `btm_issues_device` AS bid 
-        WHERE NOT EXISTS (
-            SELECT * FROM weblib_issues_phaseout AS wip 
-            WHERE left(bid.KitCode, 10) = wip.KitCode
+        WHERE LEFT(`KitCode`, 10) NOT LIKE '%%ZZ' 
+        AND NOT EXISTS (
+            SELECT * FROM file_issues_erp AS fie 
+            WHERE LEFT(bid.KitCode, 10) = fie.KitCode 
+            AND fie.`CommercialStatus` IN ('CE', 'PO', 'SD')
         )
         """
     if ttype == 'beacon':
