@@ -296,6 +296,32 @@ def user_edit(request):
     dResult['data']['items'].append(dItem)
     return HttpResponse(simplejson.dumps(dResult), content_type='application/json')
 
+tbl = 'auth_user'
+db = dc('requestdb')
+def delete(request):
+    logging.info(f'executing delte {request.method}:  {request.body} ......')
+    res = {
+        'code': 20000
+    }
+
+    try:
+        req = json.loads(request.body.decode('utf-8'))
+        mail = req['mail']
+        ids = req['ids']
+
+        sql = 'delete from {tbl} where `Id` in ({LIST})'.format(
+            tbl=tbl,
+            LIST=ids
+        )
+        logging.info(f'delete, sql = {sql}')
+
+        db.execute(sql)
+    except Exception as e:
+        logging.info(f"exception caught: {e}")
+        res['code'] = 20001
+
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+
 
 def role_list(request):
     try:
