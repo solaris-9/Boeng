@@ -47,6 +47,7 @@ tbl = 'tbl_devicedp'
 devicedp_fields = {
 	'ID': {'type': 'str'},
 	'field_customer': {'type': 'str'},
+    'field_customer_id': {'type': 'str'},
     'field_status': {'type': 'str'},
     'field_assignee': {'type': 'str'},
     'field_mail': {'type': 'str'},
@@ -67,7 +68,6 @@ devicedp_fields = {
     'field_boeng_rule': {'type': 'str'},
     'field_whitelisting_method': {'type': 'str'},
     'field_ip_ranges': {'type': 'str'},
-    'field_customer_id': {'type': 'str'},
     'field_csv_file': {'type': 'str'},
     'field_boeng_options': {'type': 'str'},
     'field_acs_url': {'type': 'str'},
@@ -81,6 +81,7 @@ devicedp_fields = {
     'field_extender_separate_license': {'type': 'str'},
     'field_extender_auto_ota': {'type': 'str'},
     'field_extender_waiver': {'type': 'str'},
+    'field_ouid': {'type': 'str'},
 	'field_additional': {'type': 'str'},
     'creator': {'type': 'str'},
     'createon': {'type': 'str'},

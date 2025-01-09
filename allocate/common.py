@@ -124,6 +124,42 @@ def opid_list(request):
     return HttpResponse(simplejson.dumps(res), content_type='application/json')
     pass
 
+def country_list(request):
+    sql = "select `country`,`iso` from `tbl_country` order by `iso` ASC"
+    logger.debug(f'sql = {sql}')
+    df = db.read_query(sql)
+
+    res = {}
+    res['code'] = 20000
+    res['data'] = {}
+    res['data']['items'] = []
+    for i_index in df.index:
+        item = {}
+        item['country'] = df.at[i_index, 'country']
+        item['iso'] = df.at[i_index, 'iso']
+        res['data']['items'].append(item)
+    
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+    pass
+
+def hosting_list(request):
+    sql = "select `field_public_cloud` as cloud,`field_region` as region from `tbl_platform`"
+    logger.debug(f'sql = {sql}')
+    df = db.read_query(sql)
+
+    res = {}
+    res['code'] = 20000
+    res['data'] = {}
+    res['data']['items'] = []
+    for i_index in df.index:
+        item = {}
+        item['cloud'] = df.at[i_index, 'cloud']
+        item['region'] = df.at[i_index, 'region']
+        res['data']['items'].append(item)
+    
+    return HttpResponse(simplejson.dumps(res), content_type='application/json')
+    pass
+
 # def csv_upload(request):
 #     res = {}
 #     res['code'] = 20000
